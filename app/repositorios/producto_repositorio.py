@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.modelos.producto import Producto, HistorialPrecio
 
@@ -57,3 +58,35 @@ class ProductoRepositorio:
         registro = HistorialPrecio(producto_id=producto.id, valor=nuevo_valor)
         self.db.add(registro)
         self.db.commit()
+
+    def crear(self, codigo, marca, nombre, categoria, stock, precio):
+        nuevo = Producto(
+            codigo=codigo,
+            marca=marca,
+            nombre=nombre,
+            categoria=categoria,
+            stock=stock,
+            precio=precio
+        )
+        self.db.add(nuevo)
+        self.db.commit()
+        self.db.refresh(nuevo)
+
+        historial = HistorialPrecio(
+            producto_id=nuevo.id,
+            fecha=datetime.now(),
+            valor=precio
+        )
+        self.db.add(historial)
+        self.db.commit()
+
+        return nuevo
+
+    def obtener_historial(self, codigo):
+        return (
+            self.db.query(HistorialPrecio)
+            .join(Producto)
+            .filter(Producto.codigo == codigo)
+            .order_by(HistorialPrecio.fecha.desc())
+            .all()
+        )
