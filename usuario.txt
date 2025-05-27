@@ -1,0 +1,1 @@
+CREATE USER 'ferremas'@'localhost' IDENTIFIED BY 'FerrePass2025!';
