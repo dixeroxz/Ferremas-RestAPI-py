@@ -43,6 +43,7 @@ class ContactoSalida(BaseModel):
 
 @router.post(
     "/",
+    operation_id="contacto_enviar",
     response_model=ContactoSalida,
     status_code=status.HTTP_201_CREATED,
     summary="Enviar un mensaje de contacto",
@@ -63,6 +64,7 @@ def enviar_mensaje(
 
 @router.get(
     "/",
+    operation_id="contacto_enviar",
     response_model=List[ContactoSalida],
     summary="Listar todos los mensajes (sólo interna)",
     dependencies=[Depends(validar_api_key_interna)]
