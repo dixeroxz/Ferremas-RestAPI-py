@@ -33,6 +33,7 @@ class ProductoDetalleSalida(BaseModel):
     codigo: str
     marca: str
     nombre: str
+    stock: int
     historial_precios: List[PrecioSalida]
     class Config:
         from_attributes = True
@@ -61,6 +62,7 @@ def obtener_por_codigo(
         "codigo": producto.codigo,
         "marca": producto.marca,
         "nombre": producto.nombre,
+        "stock": producto.stock,
         "historial_precios": historial
     }
 
@@ -79,6 +81,7 @@ def listar_productos(
             "codigo": p.codigo,
             "marca": p.marca,
             "nombre": p.nombre,
+            "stock": p.stock,
             "historial_precios": h
         }
         for p, h in datos
@@ -99,6 +102,7 @@ def productos_por_categoria(
             "codigo": p.codigo,
             "marca": p.marca,
             "nombre": p.nombre,
+            "stock": p.stock,
             "historial_precios": h
         }
         for p, h in datos
@@ -119,6 +123,7 @@ def productos_stock_bajo(
             "codigo": p.codigo,
             "marca": p.marca,
             "nombre": p.nombre,
+            "stock": p.stock,
             "historial_precios": h
         }
         for p, h in datos
@@ -170,3 +175,20 @@ def actualizar_precio(
         "nombre": producto.nombre,
         "historial_precios": historial
     }
+
+@router.delete(
+    "/{codigo}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar un producto",
+    dependencies=[Depends(validar_api_key_interna)]
+)
+def eliminar_producto(
+    codigo: str,
+    servicio: ProductoServicio = Depends(obtener_servicio)
+):
+    """
+    Elimina un producto y su historial.
+    Responde 204 No Content si tuvo éxito, 404 si no existe.
+    """
+    servicio.borrar_producto(codigo)
+    return None

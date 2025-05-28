@@ -90,3 +90,22 @@ class ProductoRepositorio:
             .order_by(HistorialPrecio.fecha.desc())
             .all()
         )
+
+    def eliminar_por_codigo(self, codigo: str) -> bool:
+        """
+        Borra un producto y todos sus historiales.
+        Devuelve True si existía y fue borrado, False si no existía.
+        """
+        producto = self.obtener_por_codigo(codigo)
+        if not producto:
+            return False
+
+        # Borra historial de precios
+        self.db.query(HistorialPrecio).filter(
+            HistorialPrecio.producto_id == producto.id
+        ).delete()
+
+        # Borra el producto
+        self.db.delete(producto)
+        self.db.commit()
+        return True

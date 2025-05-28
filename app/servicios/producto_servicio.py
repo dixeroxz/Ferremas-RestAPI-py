@@ -56,3 +56,12 @@ class ProductoServicio:
         self.repo.actualizar_precio(producto, nuevo_valor)
         historial = self.repo.obtener_historial_precios(producto.id)
         return producto, historial
+
+    def borrar_producto(self, codigo: str) -> None:
+            """
+            Lanza HTTPException 404 si el producto no existe,
+            sino borra y retorna None.
+            """
+            ok = self.repo.eliminar_por_codigo(codigo)
+            if not ok:
+                raise HTTPException(status_code=404, detail="Producto no encontrado")
