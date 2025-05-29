@@ -1,39 +1,39 @@
-FERREMAS REST API PASO A PASO 
+# 🛠️ FERREMAS REST API
 
+Este proyecto es una REST API desarrollada con **FastAPI** para la gestión de productos. Aquí encontrarás los pasos necesarios para ejecutar la API localmente y probar sus endpoints mediante Swagger o Postman.
+
+---
+
+## 🚀 Paso a paso para iniciar el proyecto
+
+### 1. Crear y activar entorno virtual
+
+```bash
 python -m venv venv
 
-(si se esta ejecutando desde el terminal)
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 .\venv\Scripts\Activate
+
+2. Instalar dependencias
 
 pip install -r requirements.txt
 
-pip install cryptography
+Si faltan algunos módulos, instálalos manualmente:
 
-pip install SQLAlchemy
+pip install cryptography SQLAlchemy python-dotenv bcrypt passlib
 
-pip install python-dotenv
+3. Configurar base de datos MySQL
+Desde el cliente de MySQL (puedes abrirlo con mysql -u root -p):
 
-pip install bcrypt
-
-pip install passlib
-
-(se ejecuta directamente en mysql)
 CREATE USER 'ferremas'@'localhost' IDENTIFIED BY 'FerrePass2025!';
-
 CREATE DATABASE mi_base_de_datos;
-
-(se usa este comando si esta desde cmd)
-mysql -u root -p
-
 GRANT ALL PRIVILEGES ON mi_base_de_datos.* TO 'ferremas'@'localhost';
 FLUSH PRIVILEGES;
 
+4. Ejecutar la API
+Desde el directorio raíz del proyecto, ejecuta:
+
 uvicorn app.main:app --reload
 
-(metodo swagger)
-http://127.0.0.1:8000/docs
-
-(metodo postman)
--importar archivo json llamado FERREMAS-productos.postman_collection.json en postman
+Esto levantará el servidor en modo desarrollo en http://127.0.0.1:8000.
