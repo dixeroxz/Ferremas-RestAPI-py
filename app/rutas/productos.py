@@ -154,6 +154,7 @@ def crear_producto(
         "codigo": producto.codigo,
         "marca": producto.marca,
         "nombre": producto.nombre,
+        "stock": producto.stock,
         "historial_precios": historial
     }
 
@@ -173,6 +174,8 @@ def actualizar_precio(
         "codigo": producto.codigo,
         "marca": producto.marca,
         "nombre": producto.nombre,
+        "precio": producto.precio,
+        "stock": producto.stock,
         "historial_precios": historial
     }
 

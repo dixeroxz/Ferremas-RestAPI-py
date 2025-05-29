@@ -1,11 +1,39 @@
 python -m venv venv
 
-.\venv\Scripts\activate
+(si se esta ejecutando desde el terminal)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+.\venv\Scripts\Activate
 
 pip install -r requirements.txt
 
+pip install cryptography
+
+pip install SQLAlchemy
+
+pip install python-dotenv
+
+pip install bcrypt
+
+pip install passlib
+
+(se ejecuta directamente en mysql)
+CREATE USER 'ferremas'@'localhost' IDENTIFIED BY 'FerrePass2025!';
+
+CREATE DATABASE mi_base_de_datos;
+
+(se usa este comando si esta desde cmd)
+mysql -u root -p
+
+GRANT ALL PRIVILEGES ON mi_base_de_datos.* TO 'ferremas'@'localhost';
+FLUSH PRIVILEGES;
 
 uvicorn app.main:app --reload
 
-swagger
+(metodo swagger)
 http://127.0.0.1:8000/docs
+
+(metodo postman)
+-importar archivo json llamado FERREMAS-productos.postman_collection.json en postman
+
+

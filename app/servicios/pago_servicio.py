@@ -23,7 +23,7 @@ class PagoServicio:
         if not pago:
             raise HTTPException(status_code=404, detail="Pago no encontrado")
         # 1) Llamada a Webpay para confirmar: response = webpay_client.confirm(token_ws)
-        # Simular confirmación exitosa:
+        # Simular confirmación exitosa:     
         exitoso = True
         if exitoso:
             pago = self.repositorio.actualizar_estado(pago, EstadoPago.APROBADO)
