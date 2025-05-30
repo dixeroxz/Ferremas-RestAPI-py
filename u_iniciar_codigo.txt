@@ -7,6 +7,8 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 
 pip install -r requirements.txt
 
+pip install transbank-sdk
+
 pip install cryptography
 
 pip install SQLAlchemy
@@ -16,6 +18,9 @@ pip install python-dotenv
 pip install bcrypt
 
 pip install passlib
+
+pip install pyngrok
+
 
 (se ejecuta directamente en mysql)
 CREATE USER 'ferremas'@'localhost' IDENTIFIED BY 'FerrePass2025!';
