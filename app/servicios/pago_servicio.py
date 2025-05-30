@@ -1,43 +1,77 @@
+import os
 from fastapi import HTTPException
 from app.repositorios.pago_repositorio import PagoRepositorio
-from app.modelos.pago import EstadoPago, Pago
-from typing import Tuple
+from app.modelos.pago import Pago
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.integration_type import IntegrationType
+
 
 class PagoServicio:
     def __init__(self, repositorio: PagoRepositorio):
         self.repositorio = repositorio
-        # Aquí carga credenciales de Webpay desde .env o configuración
-        # e.g. self.webpay_client = WebpayClient(api_key=...)
 
-    def iniciar_pago(self, order_id: str, monto: float, moneda: str = "CLP") -> Pago:
-        # 1) Lógica para llamar a Webpay y obtener token + URL redirección
-        # Ejemplo ficticio:
-        token = f"TK_{order_id}"
-        url = f"https://webpay.example.com/pay/{token}"
-        # 2) Guardar en BD
-        pago = self.repositorio.crear_pago(order_id, monto, moneda, token, url)
+        # Configuración Webpay
+        commerce_code = os.getenv("WEBPAY_COMMERCE_CODE", "597055555532")
+        api_key = os.getenv("WEBPAY_API_KEY", "597055555532")
+        environment = os.getenv("WEBPAY_ENVIRONMENT", "integration").lower()
+
+        integration_type = (
+            IntegrationType.TEST if environment == "integration" else IntegrationType.LIVE
+        )
+
+        self.webpay = Transaction(
+            commerce_code=commerce_code,
+            api_key=api_key,
+            integration_type=integration_type
+        )
+
+    def iniciar_pago(self, monto: float, usuario_id: int, compra_id: int, moneda: str = "CLP") -> Pago:
+        buy_order = f"ORD-{usuario_id}-{compra_id}"
+        session_id = f"SESSION-{usuario_id}"
+        return_url = os.getenv("WEBPAY_RETURN_URL", "https://miapp.cl/pagos/confirmar")
+
+        try:
+            respuesta = self.webpay.create(
+                buy_order=buy_order,
+                session_id=session_id,
+                amount=monto,
+                return_url=return_url
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al iniciar transacción Webpay: {str(e)}"
+            )
+
+        # Registrar el pago con token y URL de redirección
+        pago = self.repositorio.crear_pago(
+            monto=monto,
+            usuario_id=usuario_id,
+            compra_id=compra_id,
+            moneda=moneda,
+            token=respuesta.token,
+            url=respuesta.url
+        )
         return pago
 
-    def confirmar_pago(self, order_id: str, token_ws: str) -> Pago:
-        pago = self.repositorio.obtener_por_order_id(order_id)
+    def confirmar_pago(self, token_ws: str) -> Pago:
+        pago = self.repositorio.obtener_por_token(token_ws)
         if not pago:
             raise HTTPException(status_code=404, detail="Pago no encontrado")
-        # 1) Llamada a Webpay para confirmar: response = webpay_client.confirm(token_ws)
-        # Simular confirmación exitosa:     
-        exitoso = True
-        if exitoso:
-            pago = self.repositorio.actualizar_estado(pago, EstadoPago.APROBADO)
+
+        try:
+            resultado = self.webpay.commit(token_ws)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al confirmar transacción Webpay: {str(e)}"
+            )
+
+        # Código de respuesta 0 = aprobado
+        if resultado.response_code == 0:
+            return self.repositorio.marcar_como_aprobado(pago)
         else:
-            pago = self.repositorio.actualizar_estado(pago, EstadoPago.RECHAZADO)
-        return pago
-
-    def cancelar_pago(self, order_id: str) -> Pago:
-        pago = self.repositorio.obtener_por_order_id(order_id)
-        if not pago:
-            raise HTTPException(status_code=404, detail="Pago no encontrado")
-        # Llamada a Webpay para anular
-        pago = self.repositorio.actualizar_estado(pago, EstadoPago.ANULADO)
-        return pago
+            return self.repositorio.marcar_como_rechazado(pago)
 
     def estado_pago(self, pago_id: int) -> Pago:
         pago = self.repositorio.obtener_por_id(pago_id)
