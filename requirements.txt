@@ -6,3 +6,8 @@ pymysql
 alembic
 python-dotenv
 httpx
+transbank-sdk
+cryptography
+bcrypt
+passlib
+pyngrok

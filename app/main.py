@@ -3,6 +3,9 @@ from fastapi import Depends, FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+# 🔌 NGROK
+from pyngrok import ngrok
+
 from app.base_de_datos import Base, motor
 from app.rutas.usuario import router as usuario_router
 from app.rutas.contacto import router as contacto_router
@@ -19,6 +22,9 @@ from app.seguridad import validar_api_key_general
 # Cargar variables de entorno
 load_dotenv()
 
+from pyngrok import conf
+conf.get_default().auth_token = os.getenv("NGROK_AUTHTOKEN")
+
 # Crear instancia de la app
 app = FastAPI(title="Ferremas REST API")
 
@@ -32,6 +38,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["X-API-KEY", "Content-Type", "Authorization"],
 )
+
+
+if os.getenv("ENV") != "PROD":
+    public_url = ngrok.connect(8000)
+    print(f"🌐 URL pública (ngrok): {public_url}")
+    os.environ["NGROK_PUBLIC_URL"] = str(public_url)
 
 # Rutas protegidas con validación de API Key
 app.include_router(

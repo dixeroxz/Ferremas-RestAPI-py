@@ -2,6 +2,7 @@ import os
 from fastapi import HTTPException
 from app.repositorios.pago_repositorio import PagoRepositorio
 from app.modelos.pago import Pago
+#from transbank.common.webpay_options import WebpayOptions import que no es reconocido posiblemete por version de python 3.12
 from transbank.webpay.webpay_plus.transaction import Transaction
 from transbank.common.integration_type import IntegrationType
 
@@ -10,20 +11,22 @@ class PagoServicio:
     def __init__(self, repositorio: PagoRepositorio):
         self.repositorio = repositorio
 
-        # Configuración Webpay
         commerce_code = os.getenv("WEBPAY_COMMERCE_CODE", "597055555532")
-        api_key = os.getenv("WEBPAY_API_KEY", "597055555532")
+        api_key = os.getenv("WEBPAY_API_KEY", "bfb279f2c...")  # usa tu API Key real
         environment = os.getenv("WEBPAY_ENVIRONMENT", "integration").lower()
 
         integration_type = (
             IntegrationType.TEST if environment == "integration" else IntegrationType.LIVE
         )
 
-        self.webpay = Transaction(
-            commerce_code=commerce_code,
-            api_key=api_key,
-            integration_type=integration_type
-        )
+        # Configurar opciones de Webpay  (descomentar si es necesario) parte que tiene problemas con el import
+        #options = WebpayOptions(
+          #  commerce_code=commerce_code,
+           # api_key=api_key,
+           # integration_type=integration_type
+       # )
+
+        #self.webpay = Transaction(options)
 
     def iniciar_pago(self, monto: float, usuario_id: int, compra_id: int, moneda: str = "CLP") -> Pago:
         buy_order = f"ORD-{usuario_id}-{compra_id}"
@@ -38,12 +41,8 @@ class PagoServicio:
                 return_url=return_url
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error al iniciar transacción Webpay: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Error al iniciar transacción Webpay: {str(e)}")
 
-        # Registrar el pago con token y URL de redirección
         pago = self.repositorio.crear_pago(
             monto=monto,
             usuario_id=usuario_id,
@@ -62,12 +61,8 @@ class PagoServicio:
         try:
             resultado = self.webpay.commit(token_ws)
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error al confirmar transacción Webpay: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Error al confirmar transacción Webpay: {str(e)}")
 
-        # Código de respuesta 0 = aprobado
         if resultado.response_code == 0:
             return self.repositorio.marcar_como_aprobado(pago)
         else:
