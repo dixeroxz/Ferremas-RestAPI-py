@@ -42,3 +42,21 @@ http://127.0.0.1:8000/docs
 -importar archivo json llamado FERREMAS-productos.postman_collection.json en postman
 
 
+{
+  "monto": 120000,
+  "moneda": "CLP",
+  "usuario_id": 1,
+  "compra_id": 2
+}
+{
+  "usuario_id": 1,
+  "productos": [
+    {
+      "codigo": "FER-54321",
+      "cantidad": 1
+    }
+  ],
+  "total": 120000
+}
+
+https://94a0-179-60-65-152.ngrok-free.app/pagos/redireccionar/

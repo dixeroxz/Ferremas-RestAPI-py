@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Form
+from fastapi import APIRouter, Depends, status, Form, Request
 from typing import Generator
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
@@ -8,7 +8,7 @@ from app.repositorios.pago_repositorio import PagoRepositorio
 from app.servicios.pago_servicio import PagoServicio
 from app.seguridad import validar_api_key_general
 
-router = APIRouter(prefix="/pagos", tags=["Pagos"])
+router = APIRouter(tags=["Pagos"])
 
 def obtener_sesion() -> Generator[Session, None, None]:
     db = SesionLocal()
@@ -19,9 +19,6 @@ def obtener_sesion() -> Generator[Session, None, None]:
 
 def obtener_servicio(db: Session = Depends(obtener_sesion)) -> PagoServicio:
     return PagoServicio(PagoRepositorio(db))
-
-
-# Esquemas
 
 class IniciarPagoEntrada(BaseModel):
     monto: float = Field(..., gt=0, example=150000.00)
@@ -39,12 +36,6 @@ class PagoSalida(BaseModel):
     class Config:
         from_attributes = True
 
-class ConfirmarPagoEntrada(BaseModel):
-    token_ws: str = Field(..., example="TK_ORD-1001")
-
-
-# Endpoints
-
 @router.post(
     "/iniciar",
     response_model=PagoSalida,
@@ -58,17 +49,24 @@ def iniciar_pago(
 ):
     return servicio.iniciar_pago(entrada.monto, entrada.usuario_id, entrada.compra_id, entrada.moneda)
 
-@router.post(
-    
+@router.api_route(
     "/confirmar",
-    response_model=PagoSalida,
+    methods=["GET", "POST"],
+    response_model=PagoSalida | dict,
     summary="Confirmar transacción de pago",
-    dependencies=[Depends(validar_api_key_general)]
 )
 def confirmar_pago(
-    token_ws: str = Form(...),
+    request: Request,
+    token_ws: str = Form(None),  # para POST
     servicio: PagoServicio = Depends(obtener_servicio)
 ):
+    if request.method == "GET":
+        token_ws = request.query_params.get("token_ws")
+        if not token_ws:
+            return {"error": "Falta el token_ws en los parámetros de la URL"}
+    elif not token_ws:
+        return {"error": "Falta el token_ws en el formulario POST"}
+
     return servicio.confirmar_pago(token_ws)
 
 @router.get(
