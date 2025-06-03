@@ -54,6 +54,8 @@ uvicorn app.main:app --reload
 Accede a la documentación interactiva de Swagger en:
 http://127.0.0.1:8000/docs
 
+para la parte de WebPay es necesario entrar con la URL de ngrok que aparece al iniciar el programa+ el token generado en el endpoint de crear pago
+
 O utiliza Postman para probar los endpoints según tu preferencia.
 ```
 
