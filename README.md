@@ -6,28 +6,33 @@ Este proyecto es una REST API desarrollada con **FastAPI** para la gestión de p
 
 ## 🚀 Paso a paso para iniciar el proyecto
 
-### 1. Crear y activar entorno virtual
-
 ```bash
+# 1. Crear y activar entorno virtual
+
 python -m venv venv
 
-
+# En Windows PowerShell, permitir ejecución de scripts (solo si es necesario)
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+# Activar el entorno virtual
 .\venv\Scripts\Activate
+```
 
----
-
-2. Instalar dependencias
+```bash
+# 2. Instalar dependencias
 
 pip install -r requirements.txt
+```
 
-Si faltan algunos módulos, instálalos manualmente:
+```bash
+# Si faltan algunos módulos, instálalos manualmente con:
 
 pip install cryptography SQLAlchemy python-dotenv bcrypt passlib
+```
 
----
+```bash
+# 3. Configurar base de datos MySQL
 
-3. Configurar base de datos MySQL
 Desde el cliente de MySQL (puedes abrirlo con mysql -u root -p):
 
 CREATE USER 'ferremas'@'localhost' IDENTIFIED BY 'FerrePass2025!';
@@ -35,11 +40,29 @@ CREATE DATABASE mi_base_de_datos;
 GRANT ALL PRIVILEGES ON mi_base_de_datos.* TO 'ferremas'@'localhost';
 FLUSH PRIVILEGES;
 
----
+```
 
-4. Ejecutar la API
-Desde el directorio raíz del proyecto, ejecuta:
+```bash
+# 4. Ejecutar la API
 
 uvicorn app.main:app --reload
+```
 
-Esto levantará el servidor en modo desarrollo en http://127.0.0.1:8000.
+```bash
+# 5. Probar la API
+
+Accede a la documentación interactiva de Swagger en:
+http://127.0.0.1:8000/docs
+
+O utiliza Postman para probar los endpoints según tu preferencia.
+```
+
+```bash
+✨ ¡Listo! Ya tienes tu API corriendo localmente y lista para usarse.
+```
+
+
+
+
+
+
