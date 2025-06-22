@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ferremas - Pago Exitoso</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link href="css/compra_exitosa.css" rel="stylesheet" />
+</head>
+
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="index.html">
+        <i class="fas fa-tools me-2"></i>Ferremas
+      </a>
+      <div class="navbar-nav ms-auto">
+        <span id="usuarioBienvenida" class="nav-link text-white"></span>
+        <a class="nav-link" href="index.html">
+          <i class="fas fa-home me-1"></i>Inicio
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="card compra-card shadow-lg">
+          <div class="card-body text-center p-5">
+            
+            <!-- Estado: Pago exitoso -->
+            <div id="estadoExitoso">
+              <div class="payment-success mb-4">
+                <div class="success-icon mb-3">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <h1 class="mb-2">¡Pago Exitoso!</h1>
+                <p class="mb-0 fs-5">Tu compra ha sido procesada correctamente</p>
+              </div>
+            </div>
+
+            <div id="detallesCompra" class="text-start">
+              <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando detalles de la compra...</p>
+              </div>
+            </div>
+
+            <!-- Botones para compra exitosa -->
+            <div id="botonesExitoso" class="d-grid gap-2 d-md-flex justify-content-md-center mt-4" style="display: none !important;">
+              <button class="btn btn-primary btn-lg me-md-2" onclick="window.location.href='index.html'">
+                <i class="fas fa-shopping-bag me-2"></i>Seguir Comprando
+              </button>
+              <button class="btn btn-outline-success btn-lg" onclick="descargarRecibo()" id="btnDescargar">
+                <i class="fas fa-download me-2"></i>Descargar Recibo
+              </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-success bg-opacity-10 rounded">
+              <small class="text-success" id="infoMensaje">
+                <i class="fas fa-check-circle me-1"></i>
+                ¡Pago completado! Recibirás un correo electrónico con los detalles de tu compra.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de Error -->
+  <div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">
+            <i class="fas fa-exclamation-triangle me-2"></i>Error
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="errorMessage">Ha ocurrido un error inesperado.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary" onclick="window.location.href='index.html'">Volver al Inicio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// Cargar configuración desde config.js
+let NGROK_URL = null;
+
+async function cargarConfiguracion() {
+    try {
+        console.log('Cargando configuración desde API...');
+        
+        // Cargar desde el endpoint de tu API local
+        const response = await fetch('http://127.0.0.1:8000/config', {
+            method: 'GET',
+            headers: {
+                'X-API-KEY': API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const config = await response.json();
+        NGROK_URL = config.ngrok_url;
+        
+        // Validar que la URL tenga el formato correcto
+        if (!NGROK_URL || !NGROK_URL.startsWith('https://')) {
+            throw new Error('URL de ngrok inválida');
+        }
+        
+        console.log('✅ NGROK_URL cargada correctamente:', NGROK_URL);
+        return true;
+        
+    } catch (error) {
+        console.error("❌ Error al cargar configuración:", error);
+        
+        // Mostrar error más específico
+        let mensajeError = "Error al cargar la configuración. ";
+        
+        if (error.message.includes('Failed to fetch')) {
+            mensajeError += "Verifica que la API esté corriendo en http://127.0.0.1:8000";
+        } else if (error.message.includes('404')) {
+            mensajeError += "Endpoint /config no encontrado en la API.";
+        } else {
+            mensajeError += error.message;
+        }
+        
+        mostrarError(mensajeError);
+        return false;
+    }
+}
+
+const COMPRAS_API_URL = "http://127.0.0.1:8000/compras/compras";
+const API_KEY = "claveExternaParaTi789";
+
+// Variables globales
+let compraActual = null;
+let usuarioActual = null;
+
+// Función para hacer requests a la API de compras (localhost)
+async function obtenerCompras() {
+    try {
+        const response = await fetch(COMPRAS_API_URL, {
+            method: 'GET',
+            headers: {
+                'X-API-KEY': API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error obteniendo compras:', error);
+        throw error;
+    }
+}
+
+// Obtener última compra del usuario con detalles
+async function obtenerUltimaCompra() {
+    const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+    
+    if (!usuario || !usuario.id) {
+        mostrarError("No se encontró información del usuario. Por favor, inicia sesión nuevamente.");
+        return null;
+    }
+
+    try {
+        console.log('Obteniendo última compra para usuario:', usuario.id);
+        
+        const response = await fetch(`http://127.0.0.1:8000/compras/compras/usuario/${usuario.id}/ultima`, {
+            method: 'GET',
+            headers: {
+                'X-API-KEY': API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('No se encontraron compras para este usuario');
+            }
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const ultimaCompra = await response.json();
+        console.log('Última compra obtenida:', ultimaCompra);
+        
+        if (ultimaCompra.detalles && ultimaCompra.detalles.length > 0) {
+            ultimaCompra.productos = ultimaCompra.detalles.map(detalle => ({
+                codigo: detalle.producto_codigo,
+                nombre: detalle.producto.nombre,
+                precio: detalle.precio_unitario,
+                cantidad: detalle.cantidad,
+                subtotal: detalle.subtotal
+            }));
+        }
+        
+        return ultimaCompra;
+    } catch (error) {
+        console.error('Error al obtener la última compra:', error);
+        mostrarError(`No se pudo cargar la información de la compra: ${error.message}`);
+        return null;
+    }
+}
+
+// Renderizar detalles de la compra (siempre como exitosa)
+function renderizarDetallesCompra(compra) {
+    const fechaCompra = compra.fecha_compra || compra.fecha;
+    const fechaFormateada = fechaCompra ? 
+        new Date(fechaCompra).toLocaleString('es-CL', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'Fecha no disponible';
+
+    let productosHTML = '';
+    
+    const productos = compra.productos || [];
+    
+    if (productos && Array.isArray(productos) && productos.length > 0) {
+        productos.forEach(producto => {
+            const subtotal = producto.subtotal || (producto.precio * producto.cantidad);
+            productosHTML += `
+                <div class="producto-item mb-3 p-3 border rounded">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${producto.nombre || 'Producto sin nombre'}</h6>
+                            <small class="text-muted">Código: ${producto.codigo || 'N/A'}</small><br>
+                            <small class="text-muted">Cantidad: ${producto.cantidad || 0}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">$${subtotal.toLocaleString()}</div>
+                            <small class="text-muted">$${(producto.precio || 0).toLocaleString()} c/u</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        productosHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No se encontraron detalles de productos para esta compra
+            </div>
+        `;
+    }
+
+    document.getElementById("detallesCompra").innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>ID de Compra:</strong><br>
+                        <code class="bg-light p-1 rounded">#${compra.id || 'N/A'}</code>
+                    </div>
+                    <div class="col-6 text-end">
+                        <strong>Fecha:</strong><br>
+                        <span class="text-muted">${fechaFormateada}</span>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <strong>Estado:</strong> 
+                        <span class="badge bg-success">Pagado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>Productos Comprados
+                </h5>
+                ${productosHTML}
+                
+                <hr class="my-4">
+                
+                <div class="total-section text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-receipt text-success me-2"></i>Total Pagado: 
+                        <span class="text-white">$${(compra.total || 0).toLocaleString()}</span>
+                    </h4>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Cargar detalles iniciales
+async function cargarDetallesCompra() {
+    const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+    
+    if (usuario && usuario.nombre) {
+        document.getElementById("usuarioBienvenida").textContent = `Hola, ${usuario.nombre}`;
+        usuarioActual = usuario;
+    } else {
+        mostrarError("No se encontró información del usuario. Por favor, inicia sesión.");
+        return;
+    }
+
+    const compra = await obtenerUltimaCompra();
+    
+    if (!compra) {
+        document.getElementById("detallesCompra").innerHTML = `
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No se encontraron compras para este usuario
+            </div>
+        `;
+        return;
+    }
+
+    compraActual = compra;
+    renderizarDetallesCompra(compra);
+    document.getElementById("botonesExitoso").style.display = "block";
+}
+
+// Función para descargar recibo en PDF
+function descargarRecibo() {
+    if (!compraActual || !usuarioActual) {
+        mostrarError("Error: No se pueden obtener los datos para el recibo");
+        return;
+    }
+
+    try {
+        // Intentar crear PDF usando jsPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        const fechaFormateada = new Date(compraActual.fecha_compra || compraActual.fecha).toLocaleString('es-CL');
+        
+        // Configurar el documento PDF
+        doc.setFontSize(20);
+        doc.text('FERREMAS - RECIBO', 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.text(`ID Compra: #${compraActual.id}`, 20, 40);
+        doc.text(`Cliente: ${usuarioActual.nombre}`, 20, 50);
+        doc.text(`Email: ${usuarioActual.email || 'N/A'}`, 20, 60);
+        doc.text(`Fecha: ${fechaFormateada}`, 20, 70);
+        
+        doc.setFontSize(14);
+        doc.text('PRODUCTOS COMPRADOS:', 20, 90);
+        
+        let yPosition = 100;
+        
+        if (compraActual.productos && compraActual.productos.length > 0) {
+            doc.setFontSize(10);
+            compraActual.productos.forEach(producto => {
+                doc.text(`• ${producto.nombre}`, 20, yPosition);
+                doc.text(`Cantidad: ${producto.cantidad} x $${producto.precio.toLocaleString()}`, 25, yPosition + 10);
+                doc.text(`Subtotal: $${(producto.subtotal || (producto.precio * producto.cantidad)).toLocaleString()}`, 25, yPosition + 20);
+                yPosition += 35;
+            });
+        } else {
+            doc.text('No hay detalles de productos disponibles', 20, yPosition);
+            yPosition += 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.text(`TOTAL PAGADO: $${compraActual.total.toLocaleString()}`, 20, yPosition + 20);
+        
+        doc.setFontSize(10);
+        doc.text('¡Gracias por su compra en Ferremas!', 105, yPosition + 40, { align: 'center' });
+        doc.text('Su pago ha sido procesado exitosamente.', 105, yPosition + 50, { align: 'center' });
+        doc.text('www.ferremas.cl', 105, yPosition + 60, { align: 'center' });
+        
+        // Descargar el PDF
+        doc.save(`Recibo-Ferremas-${compraActual.id}.pdf`);
+        
+    } catch (error) {
+        console.log('jsPDF no disponible, creando archivo de texto:', error);
+        // Fallback a archivo de texto
+        descargarReciboTexto();
+    }
+    
+    // Cambiar el botón temporalmente
+    const btn = document.getElementById("btnDescargar");
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check me-2"></i>Descargado';
+    btn.classList.replace('btn-outline-success', 'btn-success');
+    
+    setTimeout(() => {
+        btn.innerHTML = textoOriginal;
+        btn.classList.replace('btn-success', 'btn-outline-success');
+    }, 2000);
+}
+
+// Función fallback para descargar recibo como texto
+function descargarReciboTexto() {
+    const fechaFormateada = new Date(compraActual.fecha_compra || compraActual.fecha).toLocaleString('es-CL');
+    
+    let reciboTexto = `
+╔══════════════════════════════════════╗
+║            FERREMAS - RECIBO          ║
+╠══════════════════════════════════════╣
+║ ID Compra: #${compraActual.id}
+║ Cliente: ${usuarioActual.nombre}
+║ Email: ${usuarioActual.email || 'N/A'}
+║ Fecha: ${fechaFormateada}
+╠══════════════════════════════════════╣
+║ PRODUCTOS COMPRADOS:
+║
+`;
+    if (compraActual.productos && compraActual.productos.length > 0) {
+        compraActual.productos.forEach(producto => {
+            reciboTexto += `║ ${producto.nombre}\n`;
+            reciboTexto += `║ Cantidad: ${producto.cantidad} x $${producto.precio.toLocaleString()}\n`;
+            reciboTexto += `║ Subtotal: $${(producto.subtotal || (producto.precio * producto.cantidad)).toLocaleString()}\n`;
+            reciboTexto += `║\n`;
+        });
+    } else {
+        reciboTexto += `║ No hay detalles de productos disponibles\n║\n`;
+    }
+    reciboTexto += `╠══════════════════════════════════════╣
+║ TOTAL PAGADO: $${compraActual.total.toLocaleString()}
+╚══════════════════════════════════════╝
+¡Gracias por su compra en Ferremas!
+Su pago ha sido procesado exitosamente.
+www.ferremas.cl
+`;
+    // Crear y descargar el archivo
+    const blob = new Blob([reciboTexto], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Recibo-Ferremas-${compraActual.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Mostrar errores
+function mostrarError(mensaje) {
+    document.getElementById("errorMessage").textContent = mensaje;
+    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    errorModal.show();
+}
+
+// Inicialización PRINCIPAL
+window.addEventListener("DOMContentLoaded", async () => {
+    console.log('Iniciando página de pago exitoso...');
+    
+    // Cargar configuración
+    await cargarConfiguracion();
+    
+    // Siempre mostrar como pago exitoso
+    await cargarDetallesCompra();
+});
+
+// Hacer funciones globales
+window.descargarRecibo = descargarRecibo;
+
+</script>
+</body>
+
+</html>

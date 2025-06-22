@@ -17,6 +17,8 @@ from app.rutas.compra import router as compra_router
 from app.rutas.pagos import router as pagos_router
 from app.rutas.divisas import router as divisas_router
 from app.seguridad import validar_api_key_general
+from app.rutas.config_router import router as config_router
+from app.servicios.config_service import inicializar_configuracion, actualizar_config_js_con_url
 from app.modelos.usuario import Usuario
 from app.servicios.usuario_servicio import pwd_context
 
@@ -49,13 +51,23 @@ if os.getenv("ENV") != "PROD":
     public_url = tunnel.public_url
     print(f"\U0001F310 URL pública (ngrok): {public_url}")
 
+    # Actualizar variables de entorno
     os.environ["NGROK_PUBLIC_URL"] = public_url
     os.environ["WEBPAY_RETURN_URL"] = f"{public_url}/pagos/confirmar"
-    os.environ["FRONTEND_CONFIRM_URL"] = f"{public_url}/pagos/confirmar"
+    os.environ["FRONTEND_CONFIRM_URL"] = f"{public_url}/static/pago_exitoso.html"
 
+    # Guardar en archivo .env
     set_key(env_path, "NGROK_PUBLIC_URL", public_url)
     set_key(env_path, "WEBPAY_RETURN_URL", f"{public_url}/pagos/confirmar")
-    set_key(env_path, "FRONTEND_CONFIRM_URL", f"{public_url}/static/confirmar_compra.html")
+    set_key(env_path, "FRONTEND_CONFIRM_URL", f"{public_url}/static/pago_exitoso.html")
+    
+    # 🔥 NUEVO: Actualizar config.js inmediatamente después de obtener la URL de ngrok
+    print("🔄 Actualizando config.js con nueva URL de ngrok...")
+    config_actualizado = actualizar_config_js_con_url(public_url)
+    if config_actualizado:
+        print("✅ config.js actualizado correctamente")
+    else:
+        print("❌ Error al actualizar config.js")
 
 # Incluir routers protegidos
 app.include_router(productos_router, prefix="/productos", tags=["Productos"], dependencies=[Depends(validar_api_key_general)])
@@ -65,11 +77,27 @@ app.include_router(divisas_router, prefix="/divisas", tags=["Divisas"], dependen
 app.include_router(usuario_router, prefix="/usuarios", tags=["Usuarios"])
 app.include_router(contacto_router, prefix="/contacto", tags=["Contacto"])
 app.include_router(redireccion_router)
+# 🔥 NUEVO: Incluir el router de configuración
+app.include_router(config_router)
 
 # Sirve carpeta static
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
+# Evento de startup - se ejecuta después de que todo esté configurado
+@app.on_event("startup")
+async def startup_event():
+    """
+    Se ejecuta al iniciar el servidor - después de la configuración de ngrok
+    """
+    print("🚀 Servidor FastAPI iniciado completamente")
+    
+    # Verificar que la configuración esté correcta
+    ngrok_url = os.getenv("NGROK_PUBLIC_URL")
+    if ngrok_url:
+        print(f"🔗 URL de ngrok configurada: {ngrok_url}")
+        print(f"🌐 Frontend disponible en: {ngrok_url}/static/index.html")
+    else:
+        print("⚠️  No se detectó URL de ngrok - modo desarrollo local")
 
 @app.get("/login")
 def login():
@@ -115,15 +143,8 @@ def login(
         "telefono": usuario.telefono,
         "rol": usuario.rol if hasattr(usuario, "rol") else "cliente"
     }
+
 # Ruta inicial
 @app.get("")
 def raiz():
     return RedirectResponse(url="/login")
-
-    return {
-        "id": usuario.id,
-        "nombre": usuario.nombre,
-        "correo": usuario.correo,
-        "direccion": usuario.direccion,
-        "telefono": usuario.telefono
-    }

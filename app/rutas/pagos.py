@@ -1,5 +1,7 @@
+import os
 from fastapi import APIRouter, Depends, status, Form, Request
 from typing import Generator
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
@@ -52,22 +54,27 @@ def iniciar_pago(
 @router.api_route(
     "/confirmar",
     methods=["GET", "POST"],
-    response_model=PagoSalida | dict,
-    summary="Confirmar transacción de pago",
+    summary="Confirmar transacción y redirigir",
 )
-def confirmar_pago(
+def confirmar_y_redirigir(
     request: Request,
-    token_ws: str = Form(None),  # para POST
+    token_ws: str = Form(None),
     servicio: PagoServicio = Depends(obtener_servicio)
 ):
     if request.method == "GET":
         token_ws = request.query_params.get("token_ws")
         if not token_ws:
-            return {"error": "Falta el token_ws en los parámetros de la URL"}
+            return RedirectResponse(
+                url=f"{os.getenv('FRONTEND_CONFIRM_URL')}?status=error&mensaje=Falta+el+token_ws+en+la+URL",
+                status_code=302
+            )
     elif not token_ws:
-        return {"error": "Falta el token_ws en el formulario POST"}
+        return RedirectResponse(
+            url=f"{os.getenv('FRONTEND_CONFIRM_URL')}?status=error&mensaje=Falta+el+token_ws+en+el+formulario",
+            status_code=302
+        )
 
-    return servicio.confirmar_pago(token_ws)
+    return servicio.procesar_y_redirigir(token_ws)
 
 @router.get(
     "/estado/{pago_id}",
