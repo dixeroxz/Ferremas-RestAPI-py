@@ -24,27 +24,43 @@ class PagoRepositorio:
         return pago
 
     def marcar_como_aprobado(self, pago: Pago) -> Pago:
-        # Cambiar estado de la compra asociada a "APROBADO"
-        compra_repo = CompraRepositorio(self.db)
-        compra_repo.confirmar_compra(pago.compra_id)
+        try:
+            # Cambiar estado de la compra asociada a "APROBADO"
+            compra_repo = CompraRepositorio(self.db)
+            compra_repo.confirmar_compra(pago.compra_id)
 
-        pago.fecha_actualizacion = datetime.utcnow()
-        self.db.commit()
-        self.db.refresh(pago)
-        return pago
+            # Actualizar fecha de actualización del pago
+            pago.fecha_actualizacion = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(pago)
+            return pago
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def marcar_como_rechazado(self, pago: Pago) -> Pago:
-        # Cambiar estado de la compra asociada a "RECHAZADO"
-        compra_repo = CompraRepositorio(self.db)
-        compra_repo.cancelar_compra(pago.compra_id)
+        try:
+            # Cambiar estado de la compra asociada a "RECHAZADO"
+            compra_repo = CompraRepositorio(self.db)
+            compra_repo.cancelar_compra(pago.compra_id)
 
-        pago.fecha_actualizacion = datetime.utcnow()
-        self.db.commit()
-        self.db.refresh(pago)
-        return pago
+            # Actualizar fecha de actualización del pago
+            pago.fecha_actualizacion = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(pago)
+            return pago
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def obtener_por_id(self, pago_id: int) -> Pago:
         return self.db.query(Pago).filter(Pago.id == pago_id).first()
 
     def obtener_por_token(self, token: str) -> Pago:
         return self.db.query(Pago).filter(Pago.token == token).first()
+    
+    def obtener_todos_los_pagos(self):
+        return self.db.query(Pago).all()
+    
+    def obtener_pagos_por_usuario(self, usuario_id: int):
+        return self.db.query(Pago).filter(Pago.usuario_id == usuario_id).all()

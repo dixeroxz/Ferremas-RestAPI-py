@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - Ferremas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/perfil.css">
+</head>
+
+<body>
+  <div class="container mt-5" style="max-width: 600px;">
+    <h2 class="mb-4"><i class="fas fa-user-circle me-2"></i>Mi Perfil</h2>
+
+    <div id="alertContainer"></div>
+
+    <form id="formPerfil">
+      <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre</label>
+        <input type="text" id="nombre" class="form-control" required />
+      </div>
+
+      <div class="mb-3">
+        <label for="correo" class="form-label">Correo</label>
+        <input type="email" id="correo" class="form-control" disabled />
+      </div>
+
+      <div class="mb-3">
+        <label for="direccion" class="form-label">Dirección</label>
+        <input type="text" id="direccion" class="form-control" />
+      </div>
+
+      <div class="mb-3">
+        <label for="telefono" class="form-label">Teléfono</label>
+        <input type="text" id="telefono" class="form-control" />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="fas fa-save me-2"></i>Guardar cambios
+      </button>
+    </form>
+
+    <div class="text-center mt-4">
+      <a href="index.html" class="btn btn-outline-secondary">
+        <i class="fas fa-home me-1"></i> Volver al inicio
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:8000";
+    const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+    const apiKey = localStorage.getItem("apiKey");
+
+    if (!usuario || !apiKey) {
+      window.location.href = "login.html";
+    }
+
+    function mostrarAlerta(mensaje, tipo = 'danger') {
+      const alertContainer = document.getElementById('alertContainer');
+      alertContainer.innerHTML = `
+        <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+          <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+          ${mensaje}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+    }
+
+    async function cargarPerfil() {
+      try {
+        const res = await fetch(`${API_URL}/usuarios/${usuario.id}`, {
+          headers: { "X-API-KEY": apiKey }
+        });
+
+        if (!res.ok) throw new Error("Error al cargar perfil");
+
+        const datos = await res.json();
+        document.getElementById("nombre").value = datos.nombre;
+        document.getElementById("correo").value = datos.correo;
+        document.getElementById("direccion").value = datos.direccion || "";
+        document.getElementById("telefono").value = datos.telefono || "";
+
+      } catch (err) {
+        mostrarAlerta("No se pudo cargar el perfil.");
+      }
+    }
+
+    document.getElementById("formPerfil").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const nombre = document.getElementById("nombre").value.trim();
+      const direccion = document.getElementById("direccion").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+
+      try {
+        const res = await fetch(`${API_URL}/usuarios/${usuario.id}`, {
+          method: "PUT", // ← asegúrate de tener este endpoint activo
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-KEY": apiKey
+          },
+          body: JSON.stringify({ nombre, direccion, telefono })
+        });
+
+        const resultado = await res.json();
+
+        if (res.ok) {
+          mostrarAlerta("Perfil actualizado correctamente", "success");
+          usuario.nombre = nombre;
+          usuario.direccion = direccion;
+          usuario.telefono = telefono;
+          localStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
+        } else {
+          mostrarAlerta(resultado.detail || "No se pudo actualizar el perfil");
+        }
+
+      } catch (err) {
+        mostrarAlerta("Error de red al guardar");
+      }
+    });
+
+    cargarPerfil();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

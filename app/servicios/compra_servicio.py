@@ -29,3 +29,7 @@ class CompraServicio:
 
     def listar_compras(self) -> List[Compra]:
         return self.repositorio.listar_compras()
+    
+    def obtener_ultima_compra_usuario_con_detalles(self, usuario_id: int) -> Compra:
+        """Obtiene la última compra del usuario con todos los detalles"""
+        return self.repositorio.obtener_ultima_compra_usuario(usuario_id)

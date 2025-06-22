@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ferremas - Compra Confirmada</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    .success-icon {
+      font-size: 4rem;
+      color: #28a745;
+      animation: bounce 1s ease-in-out;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 60%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      80% { transform: translateY(-10px); }
+    }
+    
+    .compra-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border: none;
+      border-radius: 15px;
+    }
+    
+    .producto-item {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .total-section {
+      background: #28a745;
+      color: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .loading-spinner {
+      display: none;
+    }
+
+    .loading-spinner.show {
+      display: inline-block;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+    }
+
+    .webpay-btn {
+      background: #0066cc;
+      border-color: #0066cc;
+    }
+
+    .webpay-btn:hover:not(:disabled) {
+      background: #0052a3;
+      border-color: #0052a3;
+    }
+
+    .payment-success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+
+    .payment-pending {
+      background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+      color: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="index.html">
+        <i class="fas fa-tools me-2"></i>Ferremas
+      </a>
+      <div class="navbar-nav ms-auto">
+        <span id="usuarioBienvenida" class="nav-link text-white"></span>
+        <a class="nav-link" href="index.html">
+          <i class="fas fa-home me-1"></i>Inicio
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="card compra-card shadow-lg">
+          <div class="card-body text-center p-5">
+            
+            <!-- Estado inicial: Preparando pago -->
+            <div id="estadoPreparando">
+              <div class="success-icon mb-4">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+              <h1 class="text-primary mb-3">¡Compra Preparada!</h1>
+              <p class="text-muted fs-5 mb-4">
+                Tu pedido está listo para procesar el pago
+              </p>
+            </div>
+
+            <!-- Estado: Pago exitoso -->
+            <div id="estadoExitoso" style="display: none;">
+              <div class="payment-success mb-4">
+                <div class="success-icon mb-3">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <h1 class="mb-2">¡Pago Exitoso!</h1>
+                <p class="mb-0 fs-5">Tu compra ha sido procesada correctamente</p>
+              </div>
+            </div>
+
+            <!-- Estado: Procesando pago -->
+            <div id="estadoProcesando" style="display: none;">
+              <div class="payment-pending mb-4">
+                <div class="spinner-border mb-3" role="status" style="color: white;">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+                <h1 class="mb-2">Procesando Pago...</h1>
+                <p class="mb-0 fs-5">Validando la transacción con Webpay</p>
+              </div>
+            </div>
+
+            <div id="detallesCompra" class="text-start">
+              <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando detalles de la compra...</p>
+              </div>
+            </div>
+
+            <!-- Botones para pagar -->
+            <div id="botonesAccion" class="d-grid gap-2 d-md-flex justify-content-md-center mt-4" style="display: none !important;">
+              <button class="btn webpay-btn btn-lg me-md-2" onclick="iniciarPago()" id="btnPagar">
+                <span class="loading-spinner spinner-border spinner-border-sm me-2" role="status"></span>
+                <i class="fas fa-credit-card me-2"></i>Pagar con Webpay
+              </button>
+              <button class="btn btn-outline-secondary btn-lg" onclick="window.location.href='index.html'">
+                <i class="fas fa-arrow-left me-2"></i>Volver al Inicio
+              </button>
+            </div>
+
+            <!-- Botones para compra exitosa -->
+            <div id="botonesExitoso" class="d-grid gap-2 d-md-flex justify-content-md-center mt-4" style="display: none !important;">
+              <button class="btn btn-primary btn-lg me-md-2" onclick="window.location.href='index.html'">
+                <i class="fas fa-shopping-bag me-2"></i>Seguir Comprando
+              </button>
+              <button class="btn btn-outline-success btn-lg" onclick="descargarRecibo()" id="btnDescargar">
+                <i class="fas fa-download me-2"></i>Descargar Recibo
+              </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-info bg-opacity-10 rounded">
+              <small class="text-muted" id="infoMensaje">
+                <i class="fas fa-info-circle me-1"></i>
+                Una vez que completes el pago, recibirás un correo electrónico con la confirmación.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de Error -->
+  <div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">
+            <i class="fas fa-exclamation-triangle me-2"></i>Error
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="errorMessage">Ha ocurrido un error inesperado.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary" onclick="window.location.href='index.html'">Volver al Inicio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // CONFIGURACIÓN - Cambia aquí tu URL de ngrok
+    const NGROK_URL = "https://c826-179-60-65-152.ngrok-free.app"; // CAMBIAR POR TU URL DE NGROK
+    const COMPRAS_API_URL = "http://127.0.0.1:8000/compras/compras";
+    const API_KEY = "claveExternaParaTi789";
+
+    // Variables globales
+    let compraActual = null;
+    let usuarioActual = null;
+
+    // Función para hacer requests a la API de compras (localhost)
+    async function obtenerCompras() {
+        try {
+            const response = await fetch(COMPRAS_API_URL, {
+                method: 'GET',
+                headers: {
+                    'X-API-KEY': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error obteniendo compras:', error);
+            throw error;
+        }
+    }
+
+    // Función para hacer requests a la API de pagos (ngrok) - CORREGIDA
+    async function pagoRequest(endpoint, options = {}) {
+        const url = `${NGROK_URL}${endpoint}`;
+        
+        const defaultOptions = {
+            mode: 'cors', // Explicitly set CORS mode
+            credentials: 'omit', // Don't send credentials
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': API_KEY,
+                'ngrok-skip-browser-warning': 'true',
+                'Accept': 'application/json',
+                ...options.headers
+            },
+            ...options
+        };
+
+        try {
+            console.log('Haciendo request a:', url);
+            console.log('Con headers:', defaultOptions.headers);
+            console.log('Con opciones:', defaultOptions);
+            
+            const response = await fetch(url, defaultOptions);
+            
+            console.log('Response status:', response.status);
+            console.log('Response headers:', [...response.headers.entries()]);
+            
+            if (!response.ok) {
+                let errorMessage;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.detail || errorData.message || `Error ${response.status}`;
+                } catch {
+                    errorMessage = `Error ${response.status}: ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error en pago request:', error);
+            
+            // Si es un error de CORS, dar más información
+            if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                console.error('Error de CORS detectado. Verifica:');
+                console.error('1. Que el servidor FastAPI esté corriendo');
+                console.error('2. Que la configuración CORS esté correcta');
+                console.error('3. Que la URL de ngrok sea correcta:', NGROK_URL);
+            }
+            
+            throw error;
+        }
+    }
+
+    // Verificar si viene desde Webpay
+    function esRetornoWebpay() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.has('token_ws') || urlParams.has('TBK_TOKEN');
+    }
+
+    // Procesar retorno de Webpay
+    async function procesarRetornoWebpay() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token_ws') || urlParams.get('TBK_TOKEN');
+        
+        if (!token) {
+            mostrarError("No se recibió el token de Webpay");
+            return;
+        }
+
+        mostrarEstado('procesando');
+        
+        try {
+            console.log('Procesando retorno de Webpay con token:', token);
+            
+            // Confirmar el pago usando la API de ngrok
+            const resultado = await pagoRequest(`/pagos/confirmar/${token}`, {
+                method: 'POST'
+            });
+
+            console.log('Resultado del pago:', resultado);
+
+            if (resultado.estado === 'aprobado') {
+                // Obtener detalles de la compra usando la API local
+                await cargarCompraConfirmada(resultado.compra_id);
+                mostrarEstado('exitoso');
+                
+                // Limpiar URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                mostrarError(`Pago ${resultado.estado}: ${resultado.detalle || 'Transacción no aprobada'}`);
+            }
+        } catch (error) {
+            console.error('Error procesando pago:', error);
+            mostrarError(`Error al procesar el pago: ${error.message}`);
+        }
+    }
+
+    // Cargar compra confirmada después del pago
+    async function cargarCompraConfirmada(compraId) {
+        try {
+            // Obtener la compra específica usando el endpoint de detalles
+            const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+            
+            if (!usuario || !usuario.id) {
+                throw new Error('No se encontró información del usuario');
+            }
+
+            console.log('Cargando compra confirmada para usuario:', usuario.id, 'compra:', compraId);
+
+            // Usar el endpoint correcto con /compras/compras/
+            const response = await fetch(`http://127.0.0.1:8000/compras/compras/usuario/${usuario.id}/ultima`, {
+                method: 'GET',
+                headers: {
+                    'X-API-KEY': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            const compra = await response.json();
+            console.log('Compra obtenida:', compra);
+            
+            // Verificar que sea la compra correcta
+            if (compra.id !== compraId) {
+                // Si no coincide, buscar en todas las compras
+                const todasLasCompras = await obtenerCompras();
+                const compraEspecifica = todasLasCompras.find(c => c.id === compraId);
+                if (!compraEspecifica) {
+                    throw new Error('Compra no encontrada');
+                }
+                compraActual = compraEspecifica;
+                renderizarDetallesCompra(compraEspecifica, true);
+                return;
+            }
+            
+            // Transformar los detalles al formato esperado
+            if (compra.detalles && compra.detalles.length > 0) {
+                compra.productos = compra.detalles.map(detalle => ({
+                    codigo: detalle.producto_codigo,
+                    nombre: detalle.producto.nombre,
+                    precio: detalle.precio_unitario,
+                    cantidad: detalle.cantidad,
+                    subtotal: detalle.subtotal
+                }));
+            }
+            
+            compraActual = compra;
+            renderizarDetallesCompra(compra, true);
+        } catch (error) {
+            console.error('Error cargando compra confirmada:', error);
+            mostrarError(`Error al cargar los detalles: ${error.message}`);
+        }
+    }
+
+    // Obtener última compra del usuario con detalles
+    async function obtenerUltimaCompra() {
+        const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+        
+        if (!usuario || !usuario.id) {
+            mostrarError("No se encontró información del usuario. Por favor, inicia sesión nuevamente.");
+            return null;
+        }
+
+        try {
+            console.log('Obteniendo última compra para usuario:', usuario.id);
+            
+            // Usar el endpoint correcto con /compras/compras/
+            const response = await fetch(`http://127.0.0.1:8000/compras/compras/usuario/${usuario.id}/ultima`, {
+                method: 'GET',
+                headers: {
+                    'X-API-KEY': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('No se encontraron compras para este usuario');
+                }
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            const ultimaCompra = await response.json();
+            console.log('Última compra obtenida:', ultimaCompra);
+            
+            // Transformar los detalles al formato esperado por el renderizador
+            if (ultimaCompra.detalles && ultimaCompra.detalles.length > 0) {
+                ultimaCompra.productos = ultimaCompra.detalles.map(detalle => ({
+                    codigo: detalle.producto_codigo,
+                    nombre: detalle.producto.nombre,
+                    precio: detalle.precio_unitario,
+                    cantidad: detalle.cantidad,
+                    subtotal: detalle.subtotal
+                }));
+            }
+            
+            return ultimaCompra;
+        } catch (error) {
+            console.error('Error al obtener la última compra:', error);
+            mostrarError(`No se pudo cargar la información de la compra: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Renderizar detalles de la compra
+    function renderizarDetallesCompra(compra, esPagoExitoso = false) {
+        // Formatear fecha
+        const fechaCompra = compra.fecha_compra || compra.fecha;
+        const fechaFormateada = fechaCompra ? 
+            new Date(fechaCompra).toLocaleString('es-CL', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'Fecha no disponible';
+
+        let productosHTML = '';
+        
+        // Verificar si hay productos (pueden venir de detalles o productos)
+        const productos = compra.productos || [];
+        
+        if (productos && Array.isArray(productos) && productos.length > 0) {
+            productos.forEach(producto => {
+                const subtotal = producto.subtotal || (producto.precio * producto.cantidad);
+                productosHTML += `
+                    <div class="producto-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${producto.nombre || 'Producto sin nombre'}</h6>
+                                <small class="text-muted">Código: ${producto.codigo || 'N/A'}</small><br>
+                                <small class="text-muted">Cantidad: ${producto.cantidad || 0}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold">$${subtotal.toLocaleString()}</div>
+                                <small class="text-muted">$${(producto.precio || 0).toLocaleString()} c/u</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            productosHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No se encontraron detalles de productos para esta compra
+                </div>
+            `;
+        }
+
+        const titulo = esPagoExitoso ? 'Productos Comprados' : 'Productos a Pagar';
+        const icono = esPagoExitoso ? 'fas fa-check-circle text-success' : 'fas fa-shopping-cart text-primary';
+        const totalTexto = esPagoExitoso ? 'Total Pagado' : 'Total a Pagar';
+        const totalIcono = esPagoExitoso ? 'fas fa-receipt text-success' : 'fas fa-credit-card text-primary';
+
+        document.getElementById("detallesCompra").innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>ID de Compra:</strong><br>
+                            <code class="bg-light p-1 rounded">#${compra.id || 'N/A'}</code>
+                        </div>
+                        <div class="col-6 text-end">
+                            <strong>Fecha:</strong><br>
+                            <span class="text-muted">${fechaFormateada}</span>
+                        </div>
+                    </div>
+                    ${compra.usuario_id ? `
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <strong>Estado:</strong> 
+                                <span class="badge ${compra.estado === 'aprobado' ? 'bg-success' : compra.estado === 'pendiente' ? 'bg-warning' : 'bg-secondary'}">${compra.estado || 'N/A'}</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="${icono} me-2"></i>${titulo}
+                    </h5>
+                    ${productosHTML}
+                    
+                    <hr class="my-4">
+                    
+                    <div class="total-section text-center">
+                        <h4 class="mb-0">
+                            <i class="${totalIcono} me-2"></i>${totalTexto}: 
+                            <span class="text-success">$${(compra.total || 0).toLocaleString()}</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Cargar detalles iniciales
+    async function cargarDetallesCompra() {
+        const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+        
+        if (usuario && usuario.nombre) {
+            document.getElementById("usuarioBienvenida").textContent = `Hola, ${usuario.nombre}`;
+            usuarioActual = usuario;
+        } else {
+            mostrarError("No se encontró información del usuario. Por favor, inicia sesión.");
+            return;
+        }
+
+        const compra = await obtenerUltimaCompra();
+        
+        if (!compra) {
+            document.getElementById("detallesCompra").innerHTML = `
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se encontraron compras para este usuario
+                </div>
+            `;
+            return;
+        }
+
+        compraActual = compra;
+        renderizarDetallesCompra(compra, false);
+        
+        // Mostrar botones para pagar
+        document.getElementById("botonesAccion").style.display = "block";
+    }
+
+    // Iniciar proceso de pago - CORREGIDO PARA REDIRECCIÓN
+    async function iniciarPago() {
+        if (!compraActual || !usuarioActual) {
+            mostrarError("No se encontraron los datos necesarios para procesar el pago.");
+            return;
+        }
+
+        const btnPagar = document.getElementById("btnPagar");
+        
+        // Deshabilitar botón y mostrar spinner
+        btnPagar.disabled = true;
+        btnPagar.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Procesando pago...
+        `;
+
+        try {
+            const datosPago = {
+                monto: compraActual.total,
+                moneda: "CLP",
+                usuario_id: usuarioActual.id,
+                compra_id: compraActual.id
+            };
+
+            console.log('Iniciando pago con datos:', datosPago);
+
+            // Usar la API de ngrok para iniciar el pago
+            const pago = await pagoRequest('/pagos/iniciar', {
+                method: 'POST',
+                body: JSON.stringify(datosPago)
+            });
+            
+            console.log('Respuesta del pago:', pago);
+            
+            // Verificar que tenemos un token válido
+            if (!pago.token) {
+                throw new Error('No se recibió un token válido del servidor');
+            }
+            
+            // Guardar información del pago
+            localStorage.setItem('pagoEnProceso', JSON.stringify({
+                pago_id: pago.id,
+                compra_id: compraActual.id,
+                usuario_id: usuarioActual.id,
+                token: pago.token
+            }));
+
+            // CORRECCIÓN: Construir la URL correcta para redireccionar a Webpay
+            const urlRedireccionar = `${NGROK_URL}/pagos/redireccionar/${pago.token}`;
+            
+            console.log('Redirigiendo a URL de redirección:', urlRedireccionar);
+            
+            // Redirigir a la URL de redirección que luego nos llevará a Webpay
+            window.location.href = urlRedireccionar;
+
+        } catch (error) {
+            console.error('Error iniciando pago:', error);
+            mostrarError(`Error al iniciar el pago: ${error.message}`);
+            
+            // Rehabilitar botón
+            btnPagar.disabled = false;
+            btnPagar.innerHTML = `<i class="fas fa-credit-card me-2"></i>Pagar con Webpay`;
+        }
+    }
+
+    // Descargar recibo
+    function descargarRecibo() {
+        if (!compraActual || !usuarioActual) {
+            mostrarError("Error: No se pueden obtener los datos para el recibo");
+            return;
+        }
+
+        const fechaFormateada = new Date(compraActual.fecha_compra || compraActual.fecha).toLocaleString('es-CL');
+        
+        let reciboTexto = `
+╔══════════════════════════════════════╗
+║            FERREMAS - RECIBO          ║
+╠══════════════════════════════════════╣
+║ ID Compra: #${compraActual.id}
+║ Cliente: ${usuarioActual.nombre}
+║ Email: ${usuarioActual.email || 'N/A'}
+║ Fecha: ${fechaFormateada}
+╠══════════════════════════════════════╣
+║ PRODUCTOS COMPRADOS:
+║
+`;
+
+        if (compraActual.productos && compraActual.productos.length > 0) {
+            compraActual.productos.forEach(producto => {
+                reciboTexto += `║ ${producto.nombre}\n`;
+                reciboTexto += `║ Cantidad: ${producto.cantidad} x $${producto.precio.toLocaleString()}\n`;
+                reciboTexto += `║ Subtotal: $${(producto.subtotal || (producto.precio * producto.cantidad)).toLocaleString()}\n`;
+                reciboTexto += `║\n`;
+            });
+        } else {
+            reciboTexto += `║ No hay detalles de productos disponibles\n║\n`;
+        }
+
+        reciboTexto += `╠══════════════════════════════════════╣
+║ TOTAL PAGADO: $${compraActual.total.toLocaleString()}
+╚══════════════════════════════════════╝
+
+¡Gracias por su compra en Ferremas!
+Su pago ha sido procesado exitosamente.
+www.ferremas.cl
+`;
+
+        // Crear y descargar el archivo
+        const blob = new Blob([reciboTexto], { type: 'text/plain;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Recibo-Ferremas-${compraActual.id}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Cambiar el botón temporalmente
+        const btn = document.getElementById("btnDescargar");
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>Descargado';
+        btn.classList.replace('btn-outline-success', 'btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = textoOriginal;
+            btn.classList.replace('btn-success', 'btn-outline-success');
+        }, 2000);
+    }
+
+    // Mostrar diferentes estados
+    function mostrarEstado(estado) {
+        // Ocultar todos los estados
+        document.getElementById("estadoPreparando").style.display = "none";
+        document.getElementById("estadoExitoso").style.display = "none";
+        document.getElementById("estadoProcesando").style.display = "none";
+        document.getElementById("botonesAccion").style.display = "none";
+        document.getElementById("botonesExitoso").style.display = "none";
+
+        const infoMensaje = document.getElementById("infoMensaje");
+
+        switch(estado) {
+            case 'preparando':
+                document.getElementById("estadoPreparando").style.display = "block";
+                document.getElementById("botonesAccion").style.display = "block";
+                infoMensaje.innerHTML = `
+                    <i class="fas fa-info-circle me-1"></i>
+                    Una vez que completes el pago, recibirás un correo electrónico con la confirmación.
+                `;
+                break;
+            
+            case 'procesando':
+                document.getElementById("estadoProcesando").style.display = "block";
+                infoMensaje.innerHTML = `
+                    <i class="fas fa-clock me-1"></i>
+                    Procesando tu pago con Webpay. Por favor espera...
+                `;
+                break;
+            
+            case 'exitoso':
+                document.getElementById("estadoExitoso").style.display = "block";
+                document.getElementById("botonesExitoso").style.display = "block";
+                infoMensaje.innerHTML = `
+                    <i class="fas fa-check-circle me-1"></i>
+                    ¡Pago completado! Recibirás un correo electrónico con los detalles de tu compra.
+                `;
+                break;
+        }
+    }
+
+    // Mostrar errores
+    function mostrarError(mensaje) {
+        document.getElementById("errorMessage").textContent = mensaje;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+    }
+
+    // Inicialización
+    window.addEventListener("DOMContentLoaded", async () => {
+        console.log('Iniciando aplicación...');
+        
+        if (esRetornoWebpay()) {
+            console.log('Detectado retorno de Webpay');
+            // Viene desde Webpay
+            await procesarRetornoWebpay();
+        } else {
+            console.log('Carga normal de la página');
+            // Carga normal
+            mostrarEstado('preparando');
+            await cargarDetallesCompra();
+        }
+    });
+
+    // Limpiar localStorage después de un tiempo
+    setTimeout(() => {
+        localStorage.removeItem("pagoEnProceso");
+    }, 10 * 60 * 1000); // 10 minutos
+
+    // Hacer funciones globales para que puedan ser llamadas desde HTML
+    window.iniciarPago = iniciarPago;
+    window.descargarRecibo = descargarRecibo;
+</script>
+</body>
+
+</html>

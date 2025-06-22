@@ -32,8 +32,10 @@ class PrecioSalida(BaseModel):
 class ProductoDetalleSalida(BaseModel):
     codigo: str
     marca: str
+    categoria: str
     nombre: str
     stock: int
+    precio: float
     historial_precios: List[PrecioSalida]
     class Config:
         from_attributes = True
@@ -62,7 +64,9 @@ def obtener_por_codigo(
         "codigo": producto.codigo,
         "marca": producto.marca,
         "nombre": producto.nombre,
+        "categoria":producto.categoria,
         "stock": producto.stock,
+        "precio": producto.precio,
         "historial_precios": historial
     }
 
@@ -81,7 +85,9 @@ def listar_productos(
             "codigo": p.codigo,
             "marca": p.marca,
             "nombre": p.nombre,
+            "categoria": p.categoria,
             "stock": p.stock,
+            "precio": p.precio,
             "historial_precios": h
         }
         for p, h in datos
@@ -102,7 +108,9 @@ def productos_por_categoria(
             "codigo": p.codigo,
             "marca": p.marca,
             "nombre": p.nombre,
+            "categoria": p.categoria,
             "stock": p.stock,
+            "precio": p.precio,
             "historial_precios": h
         }
         for p, h in datos
@@ -123,7 +131,9 @@ def productos_stock_bajo(
             "codigo": p.codigo,
             "marca": p.marca,
             "nombre": p.nombre,
+            "categoria": p.categoria,
             "stock": p.stock,
+            "precio": p.precio,
             "historial_precios": h
         }
         for p, h in datos
@@ -154,7 +164,9 @@ def crear_producto(
         "codigo": producto.codigo,
         "marca": producto.marca,
         "nombre": producto.nombre,
+        "categoria":producto.categoria,
         "stock": producto.stock,
+        "precio": producto.precio,
         "historial_precios": historial
     }
 
@@ -174,8 +186,9 @@ def actualizar_precio(
         "codigo": producto.codigo,
         "marca": producto.marca,
         "nombre": producto.nombre,
-        "precio": producto.precio,
+        "categoria":producto.categoria,
         "stock": producto.stock,
+        "precio": producto.precio,
         "historial_precios": historial
     }
 

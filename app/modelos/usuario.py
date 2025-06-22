@@ -11,7 +11,7 @@ class Usuario(Base):
     contrasena = Column(String(255), nullable=False)
     direccion = Column(String(200), nullable=True)
     telefono = Column(String(20), nullable=True)
+    rol = Column(String(20), default="cliente")
 
     compras = relationship("Compra", back_populates="usuario", cascade="all, delete-orphan")
     pagos = relationship("Pago", back_populates="usuario", cascade="all, delete-orphan")
-

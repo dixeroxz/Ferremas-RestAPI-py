@@ -1,0 +1,7 @@
+Vista de admin
+email: admin@ferremas.cl
+contraseña: admin123
+
+Vista de cliente:
+email: lucia@ferremas.cl
+contraseña: cliente123

@@ -1,0 +1,92 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #eef4fb;
+  color: #2c3e50;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  border-radius: 1rem;
+  border: none;
+  background-color: #ffffff;
+}
+
+.brand-logo {
+  font-size: 2.5rem;
+  color: #0d6efd;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 2;
+}
+
+.with-icon {
+  padding-left: 2.5rem;
+}
+
+.form-floating-icon {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.btn-login {
+  border-radius: 30px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.btn-login .loading-spinner {
+  display: none;
+}
+
+.btn-login:hover {
+  background-color: #084298;
+}
+
+.btn-register {
+  border-radius: 30px;
+  font-weight: bold;
+}
+
+.alert-custom {
+  font-size: 0.9rem;
+  border-radius: 0.75rem;
+}
+
+/* Botón volver al inicio */
+.btn-outline-secondary {
+  border-radius: 20px;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .btn-login,
+  .btn-register {
+    font-size: 0.95rem;
+  }
+}

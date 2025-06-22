@@ -1,0 +1,137 @@
+/* Tipografía general */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f9ff;
+  color: #2c3e50;
+}
+
+/* Encabezado */
+.navbar {
+  background-color: #0d6efd;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  color: #ffffff !important;
+  font-weight: bold;
+}
+
+.navbar-nav .nav-link {
+  color: #ffffff !important;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+  color: #dbeafe !important;
+}
+
+/* Cards de productos */
+.card {
+  border: none;
+  border-radius: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.05);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #1e3a8a;
+}
+
+.card-text {
+  font-size: 0.9rem;
+  color: #3c4c64;
+}
+
+.btn-outline-primary {
+  border-radius: 20px;
+  color: #0d6efd;
+  border-color: #0d6efd;
+  transition: all 0.3s;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  color: white;
+}
+
+/* Footer */
+footer {
+  background-color: #0b2a5b;
+  color: #e0e0e0;
+  padding: 2rem 0;
+  margin-top: 4rem;
+  font-size: 0.9rem;
+}
+
+footer .footer-heading {
+  font-weight: bold;
+  color: #60a5fa;
+  margin-bottom: 0.5rem;
+}
+
+footer a {
+  color: #dbeafe;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+  color: #60a5fa;
+}
+
+footer form .form-control {
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+  border: 1px solid #cfe2ff;
+}
+
+footer .btn-primary {
+  border-radius: 20px;
+  background-color: #0d6efd;
+  border: none;
+  font-weight: bold;
+}
+
+footer .btn-primary:hover {
+  background-color: #084298;
+}
+
+/* Carrito */
+.offcanvas-body {
+  background-color: #ffffff;
+}
+
+.list-group-item {
+  border: none;
+  border-bottom: 1px solid #dee2e6;
+}
+
+#total-carrito {
+  color: #198754;
+  font-weight: bold;
+}
+
+/* Botones dentro del carrito */
+.btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+/* Adaptación para móviles */
+@media (max-width: 768px) {
+  .card-title {
+    font-size: 1rem;
+  }
+
+  footer {
+    text-align: center;
+  }
+}
