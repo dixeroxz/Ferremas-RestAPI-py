@@ -8,53 +8,123 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="/static/css/perfil.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
-  <div class="container mt-5" style="max-width: 600px;">
-    <h2 class="mb-4"><i class="fas fa-user-circle me-2"></i>Mi Perfil</h2>
-
-    <div id="alertContainer"></div>
-
-    <form id="formPerfil">
-      <div class="mb-3">
-        <label for="nombre" class="form-label">Nombre</label>
-        <input type="text" id="nombre" class="form-control" required />
-      </div>
-
-      <div class="mb-3">
-        <label for="correo" class="form-label">Correo</label>
-        <input type="email" id="correo" class="form-control" disabled />
-      </div>
-
-      <div class="mb-3">
-        <label for="direccion" class="form-label">Dirección</label>
-        <input type="text" id="direccion" class="form-control" />
-      </div>
-
-      <div class="mb-3">
-        <label for="telefono" class="form-label">Teléfono</label>
-        <input type="text" id="telefono" class="form-control" />
-      </div>
-
-      <button type="submit" class="btn btn-primary w-100">
-        <i class="fas fa-save me-2"></i>Guardar cambios
-      </button>
-    </form>
-
-    <div class="text-center mt-4">
-      <a href="index.html" class="btn btn-outline-secondary">
-        <i class="fas fa-home me-1"></i> Volver al inicio
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <i class="fas fa-tools me-2"></i>Ferremas
       </a>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-lg-8 mx-auto">
+        
+        <!-- Card de Perfil -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <h4><i class="fas fa-user-circle me-2"></i>Mi Perfil</h4>
+          </div>
+          <div class="card-body">
+            <div id="alertContainer"></div>
+
+            <form id="formPerfil">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="nombre" class="form-label">
+                    <i class="fas fa-user me-1"></i>Nombre
+                  </label>
+                  <input type="text" id="nombre" class="form-control" required />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label for="correo" class="form-label">
+                    <i class="fas fa-envelope me-1"></i>Correo
+                  </label>
+                  <input type="email" id="correo" class="form-control" disabled />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="direccion" class="form-label">
+                  <i class="fas fa-map-marker-alt me-1"></i>Dirección
+                </label>
+                <input type="text" id="direccion" class="form-control" />
+              </div>
+
+              <div class="mb-3">
+                <label for="telefono" class="form-label">
+                  <i class="fas fa-phone me-1"></i>Teléfono
+                </label>
+                <input type="text" id="telefono" class="form-control" />
+              </div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary me-3">
+                  <i class="fas fa-save me-2"></i>Guardar cambios
+                </button>
+                <a href="index.html" class="btn btn-outline-secondary">
+                  <i class="fas fa-home me-1"></i> Volver al inicio
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Card de Historial de Compras -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <h4><i class="fas fa-shopping-bag me-2"></i>Historial de Compras</h4>
+          </div>
+          <div class="card-body">
+            <div id="loadingCompras" class="text-center py-4">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <p class="mt-2">Cargando historial de compras...</p>
+            </div>
+
+            <div id="comprasContainer" style="display: none;">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Total</th>
+                      <th>Estado</th>
+                      <th>Productos</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tablaCompras">
+                    <!-- Las compras se cargarán aquí -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="noCompras" class="text-center py-4" style="display: none;">
+              <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No tienes compras registradas</h5>
+              <p class="text-muted">Cuando realices tu primera compra, aparecerá aquí.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const API_URL = "http://localhost:8000";
-    const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
-    const apiKey = localStorage.getItem("apiKey");
+    const usuario = JSON.parse(sessionStorage.getItem("usuarioLogueado")) || JSON.parse(localStorage.getItem("usuarioLogueado"));
+    const apiKey = "claveExternaParaTi789";
 
-    if (!usuario || !apiKey) {
+    if (!usuario) {
       window.location.href = "login.html";
     }
 
@@ -78,14 +148,177 @@
         if (!res.ok) throw new Error("Error al cargar perfil");
 
         const datos = await res.json();
-        document.getElementById("nombre").value = datos.nombre;
-        document.getElementById("correo").value = datos.correo;
+        document.getElementById("nombre").value = datos.nombre || "";
+        document.getElementById("correo").value = datos.correo || "";
         document.getElementById("direccion").value = datos.direccion || "";
         document.getElementById("telefono").value = datos.telefono || "";
 
       } catch (err) {
         mostrarAlerta("No se pudo cargar el perfil.");
       }
+    }
+
+    async function cargarCompras() {
+      try {
+        const res = await fetch(`${API_URL}/compras/compras/usuario/${usuario.id}`, {
+          headers: { "X-API-KEY": apiKey }
+        });
+
+        document.getElementById("loadingCompras").style.display = "none";
+
+        if (!res.ok) throw new Error("Error al cargar compras");
+
+        const compras = await res.json();
+        
+        if (compras.length === 0) {
+          document.getElementById("noCompras").style.display = "block";
+          return;
+        }
+
+        const tablaBody = document.getElementById("tablaCompras");
+        tablaBody.innerHTML = "";
+
+        compras.forEach(compra => {
+          // Convertir la fecha correctamente
+          const fechaCompra = new Date(compra.fecha);
+          const fechaValida = !isNaN(fechaCompra.getTime());
+          
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>
+              <strong>${fechaValida ? fechaCompra.toLocaleDateString('es-ES') : 'Fecha no disponible'}</strong><br>
+              <small class="text-muted">${fechaValida ? fechaCompra.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : ''}</small>
+            </td>
+            <td>
+              <strong class="text-success">${compra.total.toLocaleString('es-ES')}</strong>
+            </td>
+            <td>
+              <span class="badge badge-${compra.estado.toLowerCase()}">${compra.estado}</span>
+            </td>
+            <td>
+              <small>${compra.detalles ? compra.detalles.length : 0} producto(s)</small>
+            </td>
+            <td>
+              <button class="btn btn-success btn-sm" onclick="descargarBoleta(${JSON.stringify(compra).replace(/"/g, '&quot;')})">
+                <i class="fas fa-download me-1"></i>Boleta
+              </button>
+            </td>
+          `;
+          tablaBody.appendChild(fila);
+        });
+
+        document.getElementById("comprasContainer").style.display = "block";
+
+      } catch (err) {
+        document.getElementById("loadingCompras").innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Error al cargar el historial de compras
+          </div>
+        `;
+      }
+    }
+
+    function descargarBoleta(compra) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Header
+      doc.setFillColor(13, 110, 253);
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.text('FERREMAS', 20, 20);
+      
+      doc.setFontSize(12);
+      doc.text('Boleta de Compra', 150, 20);
+
+      // Reset color
+      doc.setTextColor(0, 0, 0);
+      
+      // Información de la compra
+      doc.setFontSize(14);
+      doc.text('DATOS DE LA COMPRA', 20, 50);
+      
+      // Verificar y formatear la fecha
+      const fechaCompra = new Date(compra.fecha);
+      const fechaValida = !isNaN(fechaCompra.getTime());
+      
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${fechaValida ? fechaCompra.toLocaleDateString('es-ES') : 'No disponible'}`, 20, 60);
+      doc.text(`Hora: ${fechaValida ? fechaCompra.toLocaleTimeString('es-ES') : 'No disponible'}`, 20, 70);
+      doc.text(`Estado: ${compra.estado}`, 20, 80);
+      doc.text(`ID Compra: ${compra.id}`, 120, 60);
+
+      // Información del cliente
+      doc.setFontSize(14);
+      doc.text('DATOS DEL CLIENTE', 20, 100);
+      
+      doc.setFontSize(10);
+      doc.text(`Nombre: ${usuario.nombre}`, 20, 110);
+      doc.text(`Email: ${usuario.correo}`, 20, 120);
+      if (usuario.direccion) doc.text(`Dirección: ${usuario.direccion}`, 20, 130);
+      if (usuario.telefono) doc.text(`Teléfono: ${usuario.telefono}`, 20, 140);
+
+      // Línea separadora
+      doc.line(20, 150, 190, 150);
+
+      // Detalles de productos
+      doc.setFontSize(14);
+      doc.text('DETALLE DE PRODUCTOS', 20, 165);
+
+      let yPosition = 180;
+      let subtotal = 0;
+
+      if (compra.detalles && compra.detalles.length > 0) {
+        // Headers de tabla
+        doc.setFontSize(9);
+        doc.text('Producto', 20, yPosition);
+        doc.text('Cant.', 120, yPosition);
+        doc.text('Precio Unit.', 140, yPosition);
+        doc.text('Subtotal', 170, yPosition);
+        
+        doc.line(20, yPosition + 3, 190, yPosition + 3);
+        yPosition += 10;
+
+        compra.detalles.forEach(detalle => {
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 30;
+          }
+          
+          const nombreProducto = detalle.producto?.nombre || `Producto: ${detalle.producto_codigo}`;
+          const cantidad = detalle.cantidad;
+          const precioUnitario = detalle.precio_unitario;
+          const subtotalDetalle = detalle.subtotal || (cantidad * precioUnitario);
+          
+          doc.text(nombreProducto.substring(0, 35), 20, yPosition);
+          doc.text(cantidad.toString(), 120, yPosition);
+          doc.text(`${precioUnitario.toLocaleString('es-ES')}`, 140, yPosition);
+          doc.text(`${subtotalDetalle.toLocaleString('es-ES')}`, 170, yPosition);
+          
+          subtotal += subtotalDetalle;
+          yPosition += 8;
+        });
+      }
+
+      // Total
+      doc.line(20, yPosition + 5, 190, yPosition + 5);
+      yPosition += 15;
+      
+      doc.setFontSize(12);
+      doc.text(`TOTAL: ${compra.total.toLocaleString('es-ES')}`, 140, yPosition);
+
+      // Footer
+      yPosition += 20;
+      doc.setFontSize(8);
+      doc.text('Gracias por su compra', 20, yPosition);
+      doc.text(`Documento generado el ${new Date().toLocaleDateString('es-ES')}`, 20, yPosition + 10);
+
+      // Descargar
+      const fechaArchivo = fechaValida ? fechaCompra.toLocaleDateString('es-ES').replace(/\//g, '-') : 'fecha-no-disponible';
+      doc.save(`Boleta_${compra.id}_${fechaArchivo}.pdf`);
     }
 
     document.getElementById("formPerfil").addEventListener("submit", async function (e) {
@@ -97,7 +330,7 @@
 
       try {
         const res = await fetch(`${API_URL}/usuarios/${usuario.id}`, {
-          method: "PUT", // ← asegúrate de tener este endpoint activo
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "X-API-KEY": apiKey
@@ -113,6 +346,9 @@
           usuario.direccion = direccion;
           usuario.telefono = telefono;
           localStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
+          if (sessionStorage.getItem("usuarioLogueado")) {
+            sessionStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
+          }
         } else {
           mostrarAlerta(resultado.detail || "No se pudo actualizar el perfil");
         }
@@ -122,7 +358,11 @@
       }
     });
 
-    cargarPerfil();
+    // Cargar datos al inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+      cargarPerfil();
+      cargarCompras();
+    });
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

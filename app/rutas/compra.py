@@ -97,6 +97,57 @@ def listar_compras(db: Session = Depends(get_db)):
     repo = CompraRepositorio(db)
     return repo.listar_compras()
 
+@router.get("/usuario/{usuario_id}", response_model=List[CompraDetalladaRespuesta])
+def listar_compras_usuario(usuario_id: int, db: Session = Depends(get_db)):
+    """
+    Lista todas las compras de un usuario específico con detalles ordenadas por fecha descendente
+    """
+    servicio = CompraServicio(db)
+    compras = servicio.listar_compras_por_usuario(usuario_id)
+    
+    if not compras:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No se encontraron compras para el usuario {usuario_id}"
+        )
+    
+    # Procesamos cada compra para incluir los detalles
+    compras_respuesta = []
+    for compra in compras:
+        detalles_procesados = []
+        
+        # Procesamos los detalles de cada compra
+        for detalle in compra.detalles:
+            producto_detalle = ProductoDetalle(
+                codigo=detalle.producto.codigo,
+                nombre=detalle.producto.nombre,
+                precio=detalle.producto.precio,
+                cantidad=detalle.cantidad,
+                subtotal=detalle.cantidad * detalle.precio_unitario
+            )
+            
+            detalle_respuesta = DetalleCompraRespuesta(
+                producto_codigo=detalle.producto_codigo,
+                cantidad=detalle.cantidad,
+                precio_unitario=detalle.precio_unitario,
+                subtotal=detalle.cantidad * detalle.precio_unitario,
+                producto=producto_detalle
+            )
+            detalles_procesados.append(detalle_respuesta)
+        
+        # Creamos la respuesta completa para cada compra
+        compra_respuesta = CompraDetalladaRespuesta(
+            id=compra.id,
+            usuario_id=compra.usuario_id,
+            total=compra.total,
+            fecha=compra.fecha,
+            estado=compra.estado,
+            detalles=detalles_procesados
+        )
+        compras_respuesta.append(compra_respuesta)
+    
+    return compras_respuesta
+
 @router.get("/usuario/{usuario_id}/ultima", response_model=CompraDetalladaRespuesta)
 def obtener_ultima_compra_usuario(usuario_id: int, db: Session = Depends(get_db)):
     """
