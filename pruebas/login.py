@@ -21,7 +21,7 @@ try:
     submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
 
     # Datos de prueba
-    email_input.send_keys("juan.pepe@example.com")
+    email_input.send_keys("juan.pep6@example.com")
     password_input.send_keys("12345678")
     remember_checkbox.click()
     time.sleep(0.5)
