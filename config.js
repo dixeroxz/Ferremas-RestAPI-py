@@ -1,1 +1,1 @@
-const NGROK_URL = "https://0f20-179-60-65-152.ngrok-free.app";
+const NGROK_URL = "https://225b-179-60-65-152.ngrok-free.app";

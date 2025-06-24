@@ -11,3 +11,6 @@ cryptography
 bcrypt
 passlib
 pyngrok
+webdriver-manager
+selenium
+pytest
