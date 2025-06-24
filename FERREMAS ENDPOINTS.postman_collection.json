@@ -29,7 +29,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"nombre\":\"pepito\",\r\n  \"correo\":\"emmaa.molina@gmail.com\",\r\n  \"contrasena\":\"penecito\",\r\n  \"direccion\":\"direccion penecito\",\r\n  \"telefono\":\"56912345678\"\r\n}",
+					"raw": "{\r\n  \"nombre\":\"pepito\",\r\n  \"correo\":\"emmaa.molina@gmail.com\",\r\n  \"contrasena\":\"emanuelito\",\r\n  \"direccion\":\"direccion penecito\",\r\n  \"telefono\":\"56912345678\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -37,7 +37,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/usuarios/usuarios",
+					"raw": "http://127.0.0.1:8000/usuarios",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -47,7 +47,6 @@
 					],
 					"port": "8000",
 					"path": [
-						"usuarios",
 						"usuarios"
 					]
 				}
@@ -60,7 +59,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"nombre\":\"pepito\",\r\n  \"correo\":\"emmaa.molina@gmail.com\",\r\n  \"contrasena\":\"penecito\",\r\n  \"direccion\":\"direccion penecito\",\r\n  \"telefono\":\"56912345678\"\r\n}",
+							"raw": "{\r\n  \"nombre\":\"pepito\",\r\n  \"correo\":\"emmaa.molina@gmail.com\",\r\n  \"contrasena\":\"emanuelito\",\r\n  \"direccion\":\"direccion penecito\",\r\n  \"telefono\":\"56912345678\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -95,7 +94,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"correo\":\"emmaa.molina@gmail.com\",\r\n  \"contrasena\":\"penecito\",\r\n  \"direccion\":\"direccion penecito\",\r\n  \"telefono\":\"56912345678\"\r\n}",
+							"raw": "{\r\n  \"nombre\":\"pepito\",\r\n  \"contrasena\":\"emanuelito\",\r\n  \"direccion\":\"direccion penecito\",\r\n  \"telefono\":\"56912345678\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -212,6 +211,122 @@
 					"port": "8000",
 					"path": [
 						"productos"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "[error] Producto ya existente",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"codigo\": \"FER-54321\",\r\n  \"marca\": \"Makita\",\r\n  \"nombre\": \"Sierra Circular Makita\",\r\n  \"categoria\": \"Herramientas Eléctricas\",\r\n  \"stock\": 15,\r\n  \"precio\": 120000.5\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/productos",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"productos"
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": null
+				},
+				{
+					"name": "[error] validación json",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"marca\": \"Makita\",\r\n  \"nombre\": \"Sierra Circular Makita\",\r\n  \"categoria\": \"Herramientas Eléctricas\",\r\n  \"stock\": 15,\r\n  \"precio\": 120000.5\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/productos",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"productos"
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": null
+				}
+			]
+		},
+		{
+			"name": "Borrar Producto",
+			"request": {
+				"auth": {
+					"type": "apikey",
+					"apikey": [
+						{
+							"key": "value",
+							"value": "claveInternaSuperSecreta123",
+							"type": "string"
+						},
+						{
+							"key": "key",
+							"value": "X-API-KEY",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"codigo\": \"FER-54321\",\r\n  \"marca\": \"Makita\",\r\n  \"nombre\": \"Sierra Circular Makita\",\r\n  \"categoria\": \"Herramientas Eléctricas\",\r\n  \"stock\": 15,\r\n  \"precio\": 120000.5\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/productos/1",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"productos",
+						"1"
 					]
 				}
 			},
@@ -582,7 +697,7 @@
 					"body": null
 				},
 				{
-					"name": "[error] codigo producto incorrecto",
+					"name": "[error] producto inexistente",
 					"originalRequest": {
 						"method": "POST",
 						"header": [],
@@ -717,10 +832,10 @@
 							]
 						}
 					},
-					"_postman_previewlanguage": "",
-					"header": [],
+					"_postman_previewlanguage": null,
+					"header": null,
 					"cookie": [],
-					"body": ""
+					"body": null
 				},
 				{
 					"name": "Obtener Compra según codigo",
@@ -926,7 +1041,41 @@
 					]
 				}
 			},
-			"response": []
+			"response": [
+				{
+					"name": "[error] compra sin carrito",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"monto\": 150000,\r\n  \"moneda\": \"CLP\",\r\n  \"usuario_id\": 1\r\n}\r\n\r\n//aca hay que cambiar la url \"https://f62a-190-20-86-235.ngrok-free.app/\" según la que te aparezca al iniciar la api\r\n//luego abrimos una pagina en google con el endpoint de \"Redireccionamiento\" y el token generado de este metodo , en el siguiente metodo estará un ejemplo\r\n\r\n//tarjeta de prueba : 4051 8856 0044 6623\r\n//CVV 123\r\n//cualquier fecha de expiración\r\n\r\n//rut: 11.111.111-1\r\n//clave : 123",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://f62a-190-20-86-235.ngrok-free.app/pagos/iniciar",
+							"protocol": "https",
+							"host": [
+								"f62a-190-20-86-235",
+								"ngrok-free",
+								"app"
+							],
+							"path": [
+								"pagos",
+								"iniciar"
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": null
+				}
+			]
 		},
 		{
 			"name": "Redireccionamiento",
