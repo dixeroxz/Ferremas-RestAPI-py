@@ -102,92 +102,167 @@ def automatizar_webpay(driver, wait):
     print("💳 Iniciando automatización de Webpay...")
     
     try:
-        # Paso 1: Seleccionar método de pago "Tarjetas"
-        print("🔍 Buscando botón 'Tarjetas'...")
-        # Intentar múltiples selectores para el botón de tarjetas
+        # Paso 1: Seleccionar método de pago "Tarjetas" - ACTUALIZADO CON EL HTML CORRECTO
+        print("🔍 Buscando botón 'Tarjetas' con selectores específicos de Angular...")
+        
+        # Selectores actualizados basados en el HTML real de Webpay/Transbank
         selectores_tarjetas = [
+            # Selector específico por ID
+            "#tarjetas",
+            "button#tarjetas",
+            # Selector por atributo app-payment-buttom
+            "button[app-payment-buttom]",
+            "button[app-payment-buttom][id='tarjetas']",
+            # Selector por clase y contenido
+            ".payment-options__method-items-option",
+            "button.payment-options__method-items-option",
+            # Selector combinado más específico
+            "button.payment-options__method-items-option#tarjetas",
+            # Selector por texto dentro del botón
+            "//button[@id='tarjetas']",
+            "//button[contains(@class, 'payment-options__method-items-option') and @id='tarjetas']",
+            "//button[@app-payment-buttom and @id='tarjetas']",
+            # Selectores por contenido de texto
+            "//button[contains(.//div, 'Tarjetas')]",
+            "//button[contains(.//div[@class='method-item-option-type'], 'Tarjetas')]",
+            # Selector por span interno
+            "//button[contains(.//span, 'Crédito, Débito, Prepago')]",
+            # Selectores más generales como fallback
             "//button[contains(text(), 'Tarjetas')]",
             "//button[contains(text(), 'tarjetas')]",
-            "//button[contains(text(), 'TARJETAS')]",
-            "//input[@value='tarjetas']/../button",
-            "//div[contains(text(), 'Tarjetas')]//button",
-            "[data-testid='tarjetas']",
-            ".payment-method-button",
-            "#tarjetas-btn"
+            "//button[contains(text(), 'TARJETAS')]"
         ]
         
         boton_tarjetas = None
+        selector_usado = None
+        
+        # Esperar a que la página de Webpay cargue completamente
+        print("⏳ Esperando que la página de Webpay cargue...")
+        time.sleep(3)
+        
         for selector in selectores_tarjetas:
             try:
+                print(f"🔍 Probando selector: {selector}")
                 if selector.startswith("//"):
                     boton_tarjetas = wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
                 else:
                     boton_tarjetas = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+                selector_usado = selector
                 print(f"✅ Botón 'Tarjetas' encontrado con selector: {selector}")
                 break
             except TimeoutException:
+                print(f"❌ Selector falló: {selector}")
                 continue
         
         if not boton_tarjetas:
-            print("⚠️ No se encontró el botón 'Tarjetas', buscando elementos disponibles...")
-            # Debug: mostrar botones disponibles
-            botones = driver.find_elements(By.TAG_NAME, "button")
-            print(f"📋 Botones encontrados: {[btn.text for btn in botones[:10]]}")
-            raise Exception("No se encontró el botón 'Tarjetas'")
+            print("⚠️ No se encontró el botón 'Tarjetas', mostrando información de debug...")
+            
+            # Debug mejorado: mostrar estructura de la página
+            try:
+                print("📋 Estructura de botones disponibles:")
+                botones = driver.find_elements(By.TAG_NAME, "button")
+                for i, btn in enumerate(botones[:15]):  # Limitar a 15 botones
+                    try:
+                        text = btn.text.strip()[:50] if btn.text else "Sin texto"
+                        classes = btn.get_attribute("class") or "Sin clases"
+                        id_attr = btn.get_attribute("id") or "Sin ID"
+                        print(f"  Botón {i+1}: ID='{id_attr}', Class='{classes[:50]}...', Text='{text}'")
+                    except:
+                        continue
+                
+                # Buscar elementos con las clases específicas
+                print("🔍 Buscando elementos con clases payment-options:")
+                payment_elements = driver.find_elements(By.CSS_SELECTOR, "[class*='payment-options']")
+                for elem in payment_elements:
+                    try:
+                        print(f"  Elemento: {elem.tag_name}, Class: {elem.get_attribute('class')}, Text: {elem.text[:30]}")
+                    except:
+                        continue
+                        
+            except Exception as debug_error:
+                print(f"Error en debug: {debug_error}")
+            
+            raise Exception("No se encontró el botón 'Tarjetas' con ningún selector")
         
-        boton_tarjetas.click()
-        print("✅ Método de pago 'Tarjetas' seleccionado")
-        time.sleep(2)
+        # Hacer scroll al elemento y hacer clic
+        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", boton_tarjetas)
+        time.sleep(1)
+        
+        # Intentar clic normal primero, luego JavaScript si falla
+        try:
+            boton_tarjetas.click()
+        except Exception as click_error:
+            print(f"⚠️ Clic normal falló, usando JavaScript: {click_error}")
+            driver.execute_script("arguments[0].click();", boton_tarjetas)
+        
+        print(f"✅ Método de pago 'Tarjetas' seleccionado usando: {selector_usado}")
+        time.sleep(3)  # Tiempo extra para que la página procese la selección
         
         # Paso 2: Ingresar número de tarjeta
         print("💳 Ingresando número de tarjeta...")
         selectores_tarjeta = [
-            "input[name='card_number']",
-            "input[placeholder*='tarjeta']",
-            "input[placeholder*='Tarjeta']",
             "input[id*='card']",
-            "input[id*='numero']",
-            ".card-number-input"
+            ".card-number-input",
+            "input[type='text'][maxlength='19']",  # Común para números de tarjeta
+            "input[autocomplete='cc-number']",
+            "//input[contains(@placeholder, 'tarjeta')]",
+            "//input[contains(@placeholder, 'Tarjeta')]",
+            "//input[contains(@placeholder, 'Número')]"
         ]
         
         campo_tarjeta = None
         for selector in selectores_tarjeta:
             try:
-                campo_tarjeta = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                if selector.startswith("//"):
+                    campo_tarjeta = wait.until(EC.presence_of_element_located((By.XPATH, selector)))
+                else:
+                    campo_tarjeta = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                print(f"✅ Campo de tarjeta encontrado con: {selector}")
                 break
             except TimeoutException:
                 continue
         
         if not campo_tarjeta:
+            # Debug para campos de input
+            print("🔍 Campos de input disponibles:")
+            inputs = driver.find_elements(By.TAG_NAME, "input")
+            for i, inp in enumerate(inputs[:10]):
+                try:
+                    placeholder = inp.get_attribute("placeholder") or "Sin placeholder"
+                    name = inp.get_attribute("name") or "Sin name"
+                    id_attr = inp.get_attribute("id") or "Sin ID"
+                    input_type = inp.get_attribute("type") or "Sin type"
+                    print(f"  Input {i+1}: ID='{id_attr}', Name='{name}', Type='{input_type}', Placeholder='{placeholder}'")
+                except:
+                    continue
             raise Exception("No se encontró el campo de número de tarjeta")
         
+        # Enfocar el campo y limpiar antes de escribir
+        driver.execute_script("arguments[0].focus();", campo_tarjeta)
         campo_tarjeta.clear()
+        time.sleep(0.5)
         campo_tarjeta.send_keys("4051885600446623")
         print("✅ Número de tarjeta ingresado")
-        time.sleep(1)
-        
-        # Paso 3: Continuar después de ingresar tarjeta
-        print("➡️ Presionando 'Continuar' después de número de tarjeta...")
-        boton_continuar1 = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Continuar') or contains(text(), 'CONTINUAR') or contains(text(), 'continuar')]")))
-        boton_continuar1.click()
-        print("✅ Primer 'Continuar' presionado")
         time.sleep(2)
         
-        # Paso 4: Ingresar fecha de expiración (sin /)
+        
+        
+        # Paso 4: Ingresar fecha de expiración
         print("📅 Ingresando fecha de expiración...")
         selectores_fecha = [
-            "input[name='expiration_date']",
-            "input[placeholder*='fecha']",
-            "input[placeholder*='MM/YY']",
-            "input[placeholder*='expir']",
-            "input[id*='expir']",
-            ".expiry-input"
+            "input[formcontrolname='fechaExpiracion']",  # Muy específico para Angular
+            "input[id='card-exp']",                      # ID exacto
+            "input[appformatexpirationdate]",            # Directiva Angular específica
+            "input.card-input[placeholder*='MM/AA']"    # Combinando clase y placeholder
         ]
         
         campo_fecha = None
         for selector in selectores_fecha:
             try:
-                campo_fecha = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                if selector.startswith("//"):
+                    campo_fecha = wait.until(EC.presence_of_element_located((By.XPATH, selector)))
+                else:
+                    campo_fecha = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                 break
             except TimeoutException:
                 continue
@@ -198,23 +273,26 @@ def automatizar_webpay(driver, wait):
         campo_fecha.clear()
         campo_fecha.send_keys("1230")  # Sin el /
         print("✅ Fecha de expiración ingresada")
-        time.sleep(1)
+        time.sleep(2)
         
         # Paso 5: Ingresar CVV
         print("🔒 Ingresando CVV...")
         selectores_cvv = [
-            "input[name='cvv']",
-            "input[placeholder*='CVV']",
-            "input[placeholder*='cvv']",
-            "input[id*='cvv']",
-            "input[id*='security']",
-            ".cvv-input"
+          "input[formcontrolname='cvv']",        # Muy específico para Angular
+          "input[id='card-cvv']",                # ID exacto
+          "input[appformatcvvnumber]",           # Directiva Angular específica
+          "input[placeholder='•••']",            # Placeholder específico de puntos
+          "input[maxlength='3'][type='password']", # Combinación común para CVV
+          "input[aria-describedby*='cvv']"  
         ]
         
         campo_cvv = None
         for selector in selectores_cvv:
             try:
-                campo_cvv = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                if selector.startswith("//"):
+                    campo_cvv = wait.until(EC.presence_of_element_located((By.XPATH, selector)))
+                else:
+                    campo_cvv = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                 break
             except TimeoutException:
                 continue
@@ -225,29 +303,29 @@ def automatizar_webpay(driver, wait):
         campo_cvv.clear()
         campo_cvv.send_keys("123")
         print("✅ CVV ingresado")
-        time.sleep(1)
+        time.sleep(2)
         
         # Paso 6: Scroll hacia abajo antes del segundo continuar
         print("📜 Scrolleando hacia abajo...")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
         
-        # Paso 7: Segundo continuar
-        print("➡️ Presionando segundo 'Continuar'...")
-        boton_continuar2 = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Continuar') or contains(text(), 'CONTINUAR') or contains(text(), 'continuar')]")))
-        boton_continuar2.click()
-        print("✅ Segundo 'Continuar' presionado")
-        time.sleep(2)
         
-        # Paso 8: Presionar botón "Pagar"
+        # Paso 7: Presionar botón "Pagar"
         print("💰 Presionando botón 'Pagar'...")
         selectores_pagar = [
             "//button[contains(text(), 'Pagar')]",
             "//button[contains(text(), 'PAGAR')]",
             "//button[contains(text(), 'pagar')]",
+            "//button[contains(text(), 'Confirmar')]",
+            "//button[contains(text(), 'CONFIRMAR')]",
             "#pay-button",
+            "#pagar-btn",
+            "#confirmar-btn",
             ".pay-button",
-            "button[type='submit']"
+            ".btn-pay",
+            "button[type='submit']",
+            "input[type='submit'][value*='Pagar']"
         ]
         
         boton_pagar = None
@@ -266,24 +344,59 @@ def automatizar_webpay(driver, wait):
         
         boton_pagar.click()
         print("✅ Botón 'Pagar' presionado")
-        time.sleep(3)
+        time.sleep(5)  # Tiempo extra para la transición
         
         # Paso 9: Segunda página - Ingresar RUT y clave
         print("🆔 Ingresando RUT y clave en segunda página...")
         
         # Ingresar RUT
         selectores_rut = [
+            # Por atributo name (más común)
+            "input[name*='rut']",
+            "input[name*='RUT']",
             "input[name='rut']",
+            "input[name='rutClient']",
+            "input[name='rutCliente']",
+            "input[name='usuario']",
+
+            # Por atributo id
+            "input[id*='rut']",
+            "input[id*='RUT']",
+            "input[id='rut']",
+            "input[id='rutClient']",
+            "input[id='rutCliente']",
+
+            # Por placeholder
             "input[placeholder*='RUT']",
             "input[placeholder*='rut']",
-            "input[id*='rut']",
-            ".rut-input"
+            "input[placeholder*='R.U.T']",
+            "input[placeholder*='Rut']",
+            "input[placeholder*='usuario']",
+
+            # Por clases CSS
+            ".rut-input",
+            ".rut",
+            ".usuario-input",
+
+            # XPath más genéricos
+            "//input[contains(@name, 'rut')]",
+            "//input[contains(@id, 'rut')]",
+            "//input[contains(@placeholder, 'RUT')]",
+            "//input[contains(@placeholder, 'rut')]",
+            "//input[contains(@class, 'rut')]",
+
+            # Selectores más generales (como fallback)
+            "input[type='text']:first-of-type",
+            "form input[type='text']:first-child"
         ]
         
         campo_rut = None
         for selector in selectores_rut:
             try:
-                campo_rut = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                if selector.startswith("//"):
+                    campo_rut = wait.until(EC.presence_of_element_located((By.XPATH, selector)))
+                else:
+                    campo_rut = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                 break
             except TimeoutException:
                 continue
@@ -298,18 +411,23 @@ def automatizar_webpay(driver, wait):
         
         # Ingresar clave
         selectores_clave = [
-            "input[name='clave']",
-            "input[name='password']",
+
             "input[type='password']",
-            "input[placeholder*='clave']",
-            "input[id*='clave']",
-            ".password-input"
+            "input[id*='password']",
+            "input[id*='pin']",
+            ".password-input",
+            ".clave-input",
+            "//input[contains(@placeholder, 'clave')]",
+            "//input[contains(@placeholder, 'Clave')]"
         ]
         
         campo_clave = None
         for selector in selectores_clave:
             try:
-                campo_clave = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                if selector.startswith("//"):
+                    campo_clave = wait.until(EC.presence_of_element_located((By.XPATH, selector)))
+                else:
+                    campo_clave = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                 break
             except TimeoutException:
                 continue
@@ -322,55 +440,112 @@ def automatizar_webpay(driver, wait):
         print("✅ Clave ingresada")
         time.sleep(1)
         
-        # Paso 10: Presionar "Aceptar"
+       # Paso 10: Presionar "Aceptar" (primera página)
         print("✅ Presionando 'Aceptar'...")
         selectores_aceptar = [
-            "//button[contains(text(), 'Aceptar')]",
-            "//button[contains(text(), 'ACEPTAR')]",
-            "//button[contains(text(), 'aceptar')]",
-            "#submit-auth",
-            "#aceptar-btn",
-            "button[type='submit']"
-        ]
-        
+        "input[type='submit']",
+        "input[value='Aceptar']",
+        "input[value*='Aceptar']",
+        "//input[@value='Aceptar']",
+        "//input[contains(@value, 'Aceptar')]",
+        "//input[contains(@value, 'ACEPTAR')]",
+        "//input[contains(@value, 'Confirmar')]",
+        "//button[contains(text(), 'Aceptar')]",
+        "button[type='submit']",
+        "#submit-auth",
+        "#aceptar-btn"
+      ]
+
         boton_aceptar = None
         for selector in selectores_aceptar:
+         try:
+            if selector.startswith("//"):
+                boton_aceptar = wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
+            else:
+                boton_aceptar = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+            break
+         except TimeoutException:
+            continue
+
+        if not boton_aceptar:
+         raise Exception("No se encontró el botón 'Aceptar'")
+
+        boton_aceptar.click()
+        print("✅ Botón 'Aceptar' presionado")
+        time.sleep(3)  # Reducido para ser más eficiente
+
+      # Paso 11: Segunda página - Presionar "Continuar"
+        print("🎯 Procesando página de confirmación - Buscando 'Continuar'...")
+        try:
+           selectores_continuar = [
+            "input[type='submit']",
+            "input[value='Continuar']",
+            "input[value='CONTINUAR']",
+            "input[value*='Continuar']",
+            "input[value*='CONTINUAR']",
+            "input[value='Aceptar']",
+            "input[value='Confirmar']",
+            "//input[@value='Continuar']",
+            "//input[contains(@value, 'Continuar')]",
+            "//input[contains(@value, 'CONTINUAR')]",
+            "button[type='submit']",
+            "//button[contains(text(), 'Continuar')]",
+            "#continuar-btn",
+            "#submit-btn"
+           ]
+
+           boton_continuar = None
+           for selector in selectores_continuar:
             try:
                 if selector.startswith("//"):
-                    boton_aceptar = wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
+                    boton_continuar = wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
                 else:
-                    boton_aceptar = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+                    boton_continuar = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+                print(f"✅ Encontrado botón 'Continuar' con selector: {selector}")
                 break
             except TimeoutException:
                 continue
-        
-        if not boton_aceptar:
-            raise Exception("No se encontró el botón 'Aceptar'")
-        
-        boton_aceptar.click()
-        print("✅ Botón 'Aceptar' presionado")
-        time.sleep(3)
-        
-        # Paso 11: Tercera página - Elegir opción y aceptar
-        print("🎯 Procesando tercera página...")
-        try:
-            # Buscar botón "Aceptar" en la página de confirmación final
-            boton_aceptar_final = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Aceptar') or contains(text(), 'ACEPTAR') or contains(text(), 'Confirmar')]")))
-            boton_aceptar_final.click()
-            print("✅ Confirmación final aceptada")
-            time.sleep(2)
-        except TimeoutException:
-            print("ℹ️ No se encontró botón de confirmación final, continuando...")
+
+           if boton_continuar:
+            boton_continuar.click()
+            print("✅ Botón 'Continuar' presionado")
+            time.sleep(3)
+
+            # Paso 12: Esperar redirección a página de pago exitoso
+            print("🎯 Esperando redirección a página de pago exitoso...")
+
+            try:
+                wait.until(lambda driver: "exitoso" in driver.page_source.lower() or
+                                      "éxito" in driver.page_source.lower() or
+                                      "aprobado" in driver.page_source.lower() or
+                                      "completado" in driver.page_source.lower())
+                print("✅ Pago procesado exitosamente")
+            except TimeoutException:
+                print("⚠️ No se detectó confirmación de pago exitoso, pero continuando...")
+
+           else:
+            print("❌ No se encontró botón 'Continuar' en la página de confirmación")
+            driver.save_screenshot("debug_no_continuar.png")
+
+        except Exception as e:
+           print(f"❌ Error en paso de confirmación: {str(e)}")
+           driver.save_screenshot("debug_error_confirmacion.png")
         
         # Paso 12: Esperar procesamiento de Webpay
         print("⏳ Esperando que Webpay procese el pago...")
-        time.sleep(5)  # Tiempo adicional para el procesamiento
+        time.sleep(8)  # Tiempo adicional para el procesamiento
         
         print("✅ Automatización de Webpay completada")
         return True
         
     except Exception as e:
         print(f"❌ Error en automatización de Webpay: {e}")
+        # Tomar screenshot para debug
+        try:
+            driver.save_screenshot("webpay_error.png")
+            print("📸 Screenshot de error guardado: webpay_error.png")
+        except:
+            pass
         return False
 
 # Obtener URL actualizada
@@ -408,7 +583,7 @@ wait = WebDriverWait(driver, 20)  # Aumentado el timeout
 
 # Simular usuario cliente
 usuario_simulado = {
-    "id": 5,
+    "id": 4,
     "nombre": "Juan Pépe",
     "rol": "cliente",
     "email": "juan.pepe@example.com"
